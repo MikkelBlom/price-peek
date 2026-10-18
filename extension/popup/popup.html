@@ -2,23 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>₩ → kr.</title>
+  <title>Price converter</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <header>
-    <span class="badge">kr.</span>
+    <span class="badge" id="badge">kr.</span>
     <div>
-      <div class="rate" id="rate">Loading rate…</div>
+      <div class="rate" id="rate">Loading rates…</div>
       <div class="meta" id="meta"></div>
     </div>
-    <button type="button" id="refresh" title="Refresh rate" aria-label="Refresh rate">↻</button>
+    <button type="button" id="refresh" title="Refresh rates" aria-label="Refresh rates">↻</button>
   </header>
 
+  <label class="row select"><span>Convert to</span>
+    <select id="target"></select>
+  </label>
   <label class="row"><span>On</span><input type="checkbox" id="enabled"><i></i></label>
   <label class="row"><span>On <b id="site">this site</b></span><input type="checkbox" id="siteOn"><i></i></label>
   <label class="row"><span>Show all prices <small>Off: max 3 at a time</small></span><input type="checkbox" id="showAll"><i></i></label>
+  <label class="row"><span>Area &amp; weight <small>평, 坪, 畳 → m² · 근 → g</small></span><input type="checkbox" id="units"><i></i></label>
 
+  <section class="detect">
+    <div class="h">Detect</div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <script src="../src/parser.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

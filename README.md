@@ -1,6 +1,6 @@
-# KRW → DKK
+# Price converter (₩ → kr.)
 
-Chrome extension that finds Korean won prices on any page and shows the amount in Danish kroner as a small dark badge on the price's top-right corner.
+Chrome extension that finds prices on any page and shows the converted amount as a small dark badge on the price's top-right corner. Converts to Danish kroner by default; the popup can switch to any supported currency.
 
 ## Install
 
@@ -10,20 +10,36 @@ Chrome extension that finds Korean won prices on any page and shows the amount i
 
 After changing any file, click the reload icon on the extension's card in `chrome://extensions`, then reload the page.
 
-## What it does
+## What it detects
 
-- Detects `₩1,500,000`, `1,500,000원`, `KRW 1.500.000`, `150만원`, `3억 5,000만원`, `3억5천만`, `12억 5,000`, `3.5억`, `5천원`, `1조 2,000억`, `1.2 million won` and similar. Comma or dot separators both work. `₩0` is ignored.
-- Converts `25평` to `83 m²` with the same badge.
-- Shows at most 3 badges at a time, picked from the prices on screen (top to bottom). Hover any other price to see its badge. "Show all prices" in the popup lifts the limit.
+| Currency | Examples |
+|---|---|
+| KRW | `₩1,500,000`, `1,500,000원`, `150만원`, `3억 5,000만원`, `12억 5,000`, `3.5억`, `5천원`, `1조 2,000억` |
+| USD | `$1,299.99`, `US$45`, `$2.5M`, `$50K`, `100 USD`, `20 dollars` |
+| EUR | `€19.99`, `1.234,56 €`, `EUR 3,5 Mio.` |
+| GBP, CHF | `£12`, `CHF 49.90` |
+| JPY | `¥1,200`, `1,200円`, `3万円`, `1億2000万円` |
+| CNY | `CN¥88`, `RMB 500`, `35元`, `100万元` |
+| SEK, NOK, DKK | `499 SEK`, `NOK 1 200`, `DKK 250` (code only) |
+| THB | `฿350`, `350 บาท`, `350 baht` |
+
+Rules for ambiguous symbols: `$` is always USD (CA$, A$, HK$, NT$ are skipped), `¥` is JPY unless written `CN¥`/`RMB`/`元`, and a bare `kr` is never matched. Comma, dot and space separators all work. Prices of 0 and prices already in the target currency get no badge.
+
+Units, metric only: `평`/`坪` and `畳`/`帖` → m², `근` → g. Imperial units are not supported.
+
+## Behaviour
+
+- At most 3 price badges (and 3 unit badges) at a time, picked from what's on screen, top to bottom. Hover any other price to see its badge. "Show all prices" lifts the limit.
+- Prices that appear later (infinite scroll, single-page apps) and prices inside embedded frames are picked up.
 - Never changes the page text. Badges sit in a separate layer that clicks pass through.
 
 ## Popup
 
-On/off, on/off for the current site, show all prices, and the current rate with its date and a refresh button.
+Target currency, on/off, on/off for the current site, show all prices, area & weight on/off, and which currencies to detect. Shows the current rate with its date and a refresh button.
 
-## Exchange rate
+## Exchange rates
 
-Daily ECB rate from [Frankfurter](https://frankfurter.dev) (free, no key), with [ExchangeRate-API](https://open.er-api.com) as a fallback. Cached and refetched when it's older than 12 hours.
+Daily ECB rates from [Frankfurter](https://frankfurter.dev) (free, no key), with [ExchangeRate-API](https://open.er-api.com) as a fallback. Cached and refetched when older than 12 hours.
 
 ## Tests
 
@@ -31,4 +47,4 @@ Daily ECB rate from [Frankfurter](https://frankfurter.dev) (free, no key), with 
 node --test tests/parser.test.js
 ```
 
-`tests/demo.html` runs the content script outside Chrome with a stubbed `chrome` API. Serve the repo root (`python -m http.server 8765`) and open `http://localhost:8765/tests/demo.html`.
+`tests/demo.html` (badges) and `tests/popup-demo.html` (popup) run the real scripts outside Chrome with a stubbed `chrome` API. Serve the repo root (`python -m http.server 8765`) and open them on `http://localhost:8765/tests/`. `demo.html?target=EUR` tries another target currency.

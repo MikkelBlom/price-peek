@@ -17,6 +17,8 @@
   <div class="card">매매 <span class="price">12억 <span>5,000</span></span> · 전용 84㎡ · 25평</div>
   <div class="card">보증금 1억 / 월세 80만 · 관리비 15만원</div>
   <div class="card">3억~4억 · KRW 1.500.000 · 5천원 · she won 3 games · 2024년</div>
+  <div class="card">$1,299.99 · CA$20 · €19,99 · 1.234,56 € · £12 · CHF 49.90 · 499 SEK · NOK 1 200 · 299 kr. · DKK 250</div>
+  <div class="card">¥1,200 · 3万円 · 6畳 · 40坪 · 100万元 · RMB 500 · ฿350 · 삼겹살 1근 · 800 sq ft</div>
   <!-- Naver shopping style: number and 원 are separate flex items -->
   <div class="card">
     <div>[올리브영기프트카드] 5만원권 (즉시사용)</div>
@@ -29,7 +31,10 @@
   <script>
     window.chrome = {
       storage: {
-        local: { get: (keys, cb) => cb({ settings: { enabled: true, disabledSites: [], showAll: false }, rate: { rate: 0.004694, date: "2026-10-16", source: "test", fetchedAt: Date.now() } }) },
+        local: { get: (keys, cb) => cb({
+          settings: { enabled: true, disabledSites: [], showAll: true, target: new URLSearchParams(location.search).get("target") || "DKK", disabledCurrencies: [], units: true },
+          rates: { rates: { EUR: 1, DKK: 7.4748, KRW: 1499.01, USD: 1.1253, GBP: 0.84385, JPY: 177.82, CNY: 7.524, SEK: 11.145, NOK: 10.624, CHF: 0.9272, THB: 37.602 }, date: "2026-10-16", source: "test", fetchedAt: Date.now() },
+        }) },
         onChanged: { addListener() {} },
       },
       runtime: { sendMessage: () => Promise.resolve() },

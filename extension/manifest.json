@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "KRW → DKK",
-  "version": "1.0.0",
-  "description": "Shows Korean won prices in Danish kroner as a small badge on the price.",
+  "name": "Price converter (₩ → kr.)",
+  "version": "1.1.0",
+  "description": "Shows prices in won, dollars, euros, yen and more in Danish kroner (or your pick) as a small badge on the price.",
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "https://api.frankfurter.dev/*",

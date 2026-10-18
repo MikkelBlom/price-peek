@@ -1,9 +1,10 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { findMatches, formatDkk, formatArea } = require("../extension/src/parser.js");
+const { findMatches, convert, formatMoney, formatArea, formatWeight } = require("../extension/src/parser.js");
 
-const values = text => findMatches(text).map(m => [m.kind, Math.round(m.value)]);
-const krw = text => findMatches(text).filter(m => m.kind === "krw").map(m => m.value);
+const money = text => findMatches(text).filter(m => m.kind === "money").map(m => [m.currency, Math.round(m.value * 100) / 100]);
+const krw = text => findMatches(text).filter(m => m.kind === "money" && m.currency === "KRW").map(m => m.value);
+const measures = text => findMatches(text).filter(m => m.kind !== "money").map(m => [m.kind, Math.round(m.value)]);
 
 test("won symbol and suffix forms", () => {
   assert.deepEqual(krw("₩1,500,000"), [1500000]);
@@ -16,7 +17,7 @@ test("won symbol and suffix forms", () => {
   assert.deepEqual(krw("1,234,567.89원"), [1234568]);
 });
 
-test("plus sign and period suffix", () => {
+test("plus sign", () => {
   const [m] = findMatches("₩1,500,000+ /30days");
   assert.equal(m.value, 1500000);
   assert.equal(m.plus, true);
@@ -55,30 +56,96 @@ test("Naver shopping text joined across flex items", () => {
   assert.deepEqual(krw("3% 48,500 원"), [48500]);
 });
 
-test("English multipliers", () => {
-  assert.deepEqual(krw("1.2 million won"), [1200000]);
-  assert.deepEqual(krw("KRW 2.3bn"), [2300000000]);
+test("dollars", () => {
+  assert.deepEqual(money("$1,299.99"), [["USD", 1299.99]]);
+  assert.deepEqual(money("US$ 45"), [["USD", 45]]);
+  assert.deepEqual(money("$2.5M"), [["USD", 2500000]]);
+  assert.deepEqual(money("$50K"), [["USD", 50000]]);
+  assert.deepEqual(money("100 USD"), [["USD", 100]]);
+  assert.deepEqual(money("20 dollars"), [["USD", 20]]);
+  assert.deepEqual(money("1.2 million won"), [["KRW", 1200000]]);
+});
+
+test("other dollars are not USD", () => {
+  assert.deepEqual(money("CA$20"), []);
+  assert.deepEqual(money("A$20"), []);
+  assert.deepEqual(money("HK$20"), []);
+  assert.deepEqual(money("NT$300"), []);
+});
+
+test("euro, pound, franc", () => {
+  assert.deepEqual(money("€19.99"), [["EUR", 19.99]]);
+  assert.deepEqual(money("1.234,56 €"), [["EUR", 1234.56]]);
+  assert.deepEqual(money("10,50 €"), [["EUR", 10.5]]);
+  assert.deepEqual(money("EUR 3,5 Mio."), [["EUR", 3500000]]);
+  assert.deepEqual(money("£12"), [["GBP", 12]]);
+  assert.deepEqual(money("CHF 49.90"), [["CHF", 49.9]]);
+});
+
+test("yen and yuan", () => {
+  assert.deepEqual(money("¥1,200"), [["JPY", 1200]]);
+  assert.deepEqual(money("1,200円"), [["JPY", 1200]]);
+  assert.deepEqual(money("3万円"), [["JPY", 30000]]);
+  assert.deepEqual(money("1億2000万円"), [["JPY", 120000000]]);
+  assert.deepEqual(money("5千円"), [["JPY", 5000]]);
+  assert.deepEqual(money("CN¥88"), [["CNY", 88]]);
+  assert.deepEqual(money("RMB 500"), [["CNY", 500]]);
+  assert.deepEqual(money("100万元"), [["CNY", 1000000]]);
+  assert.deepEqual(money("35元"), [["CNY", 35]]);
+  assert.deepEqual(money("3万人"), []); // a count of people, not money
+});
+
+test("Nordic and Thai", () => {
+  assert.deepEqual(money("499 SEK"), [["SEK", 499]]);
+  assert.deepEqual(money("NOK 1 200"), [["NOK", 1200]]);
+  assert.deepEqual(money("12 500,50 €"), [["EUR", 12500.5]]);
+  assert.deepEqual(money("DKK 250"), [["DKK", 250]]);
+  assert.deepEqual(money("฿350"), [["THB", 350]]);
+  assert.deepEqual(money("350 บาท"), [["THB", 350]]);
+  assert.deepEqual(money("350 baht"), [["THB", 350]]);
+  assert.deepEqual(money("299 kr."), []); // bare kr is ambiguous
 });
 
 test("non-prices are not matched", () => {
-  assert.deepEqual(krw("2024년 10월"), []);
-  assert.deepEqual(krw("she won 3 games"), []);
-  assert.deepEqual(krw("5천명"), []);
-  assert.deepEqual(krw("EN | KRW"), []);
+  assert.deepEqual(money("2024년 10월"), []);
+  assert.deepEqual(money("she won 3 games"), []);
+  assert.deepEqual(money("5천명"), []);
+  assert.deepEqual(money("EN | KRW"), []);
+  assert.deepEqual(money("EURO 2024"), []);
 });
 
-test("pyeong area", () => {
-  assert.deepEqual(values("25평"), [["area", 83]]);
-  assert.deepEqual(values("30평대 아파트"), [["area", 99]]);
-  assert.deepEqual(values("평균 5평균"), []);
+test("area and weight, metric only", () => {
+  assert.deepEqual(measures("25평"), [["area", 83]]);
+  assert.deepEqual(measures("30평대 아파트"), [["area", 99]]);
+  assert.deepEqual(measures("평균 5평균"), []);
+  assert.deepEqual(measures("40坪"), [["area", 132]]);
+  assert.deepEqual(measures("6畳"), [["area", 10]]);
+  assert.deepEqual(measures("8帖"), [["area", 13]]);
+  assert.deepEqual(measures("삼겹살 1근"), [["weight", 600]]);
+  assert.deepEqual(measures("3근무"), []);
+  assert.deepEqual(measures("800 sq ft · 5 lbs"), []);
 });
 
-test("DKK formatting", () => {
-  assert.equal(formatDkk(7041), "7.041 kr.");
-  assert.equal(formatDkk(7041, true), "7.041+ kr.");
-  assert.equal(formatDkk(6412300), "6,4 mio. kr.");
-  assert.equal(formatDkk(152300000), "152 mio. kr.");
-  assert.equal(formatDkk(2.1e9), "2,1 mia. kr.");
-  assert.equal(formatDkk(4.694), "4,69 kr.");
+test("conversion through EUR-based rates", () => {
+  const rates = { EUR: 1, DKK: 7.46, KRW: 1495, USD: 1.08 };
+  assert.equal(Math.round(convert(1500000, "KRW", "DKK", rates)), 7485);
+  assert.equal(Math.round(convert(100, "USD", "DKK", rates)), 691);
+  assert.equal(convert(5, "DKK", "DKK", rates), 5);
+  assert.ok(Number.isNaN(convert(5, "THB", "DKK", rates)));
+});
+
+test("formatting", () => {
+  assert.equal(formatMoney(7041), "7.041 kr.");
+  assert.equal(formatMoney(7041, "DKK", true), "7.041+ kr.");
+  assert.equal(formatMoney(6412300), "6,4 mio. kr.");
+  assert.equal(formatMoney(152300000), "152 mio. kr.");
+  assert.equal(formatMoney(2.1e9), "2,1 mia. kr.");
+  assert.equal(formatMoney(4.694), "4,69 kr.");
+  assert.equal(formatMoney(944.2, "EUR"), "€944");
+  assert.equal(formatMoney(2500000, "USD"), "$2,5 mio.");
+  assert.equal(formatMoney(1234, "SEK"), "1.234 SEK");
   assert.equal(formatArea(82.6), "83 m²");
+  assert.equal(formatArea(6.4), "6,4 m²");
+  assert.equal(formatWeight(600), "600 g");
+  assert.equal(formatWeight(1800), "1,8 kg");
 });

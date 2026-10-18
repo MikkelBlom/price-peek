@@ -19,6 +19,7 @@ header > div { flex: 1; min-width: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--line); }
 .row:last-of-type { border-bottom: 0; }
+.badge { min-width: 2.2em; text-align: center; box-shadow: 0 0 0 1px var(--line); }
 .row span { flex: 1; min-width: 0; }
 .row b { font-weight: 600; overflow-wrap: anywhere; }
 .row small { display: block; color: var(--muted); font-size: 11.5px; }
@@ -29,3 +30,13 @@ header > div { flex: 1; min-width: 0; }
 .row input:checked + i::after { transform: translateX(14px); }
 .row input:focus-visible + i { outline: 2px solid var(--on); outline-offset: 2px; }
 .row.off { opacity: .45; pointer-events: none; }
+.row.select { cursor: default; }
+.row select { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; max-width: 170px; }
+.row select:focus-visible { outline: 2px solid var(--on); outline-offset: 1px; }
+.detect { padding: 10px 14px 14px; border-top: 1px solid var(--line); }
+.detect .h { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { font: 600 12px/1 "Segoe UI", system-ui, sans-serif; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: none; color: var(--muted); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--on); border-color: var(--on); color: var(--knob); }
+.chip:focus-visible { outline: 2px solid var(--on); outline-offset: 2px; }
+.chip[hidden] { display: none; }

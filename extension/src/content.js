@@ -1,14 +1,16 @@
-// Finds KRW prices in the page text and shows a small DKK badge on each price's top-right corner.
+// Finds prices (and 평/坪/畳/근) in the page text and shows a small badge with the converted value
+// on each one's top-right corner, in the currency picked in the popup.
 // Never modifies the page: badges live in a fixed, click-through shadow-DOM layer.
 (() => {
   const P = globalThis.KrwParser;
   const MAX_VISIBLE = 3;
   const RATE_MAX_AGE = 12 * 60 * 60 * 1000;
   const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT", "SELECT", "OPTION", "TEMPLATE", "SVG", "CANVAS", "IFRAME"]);
-  const CANDIDATE = /[\d₩￦원억만조천백평]|krw|won/i;
+  // Text nodes worth grouping: digits, or a currency/unit marker that may sit in its own element next to the number.
+  const CANDIDATE = /[\d₩￦원억만조천백평근$€£¥￥฿円元块塊万萬億亿兆千百坪畳帖]|บาท|\b(?:USD|EUR|GBP|JPY|CNY|RMB|SEK|NOK|CHF|THB|KRW|DKK)\b|\b(?:dollars?|euros?|yen|yuan|baht|won)\b/i;
 
-  let settings = { enabled: true, disabledSites: [], showAll: false };
-  let rate = null;
+  let settings = { enabled: true, disabledSites: [], showAll: false, target: "DKK", disabledCurrencies: [], units: true };
+  let rates = null;
   let matches = [];
   let pointer = { x: -1, y: -1 };
   let host, layer, observer, scanTimer, lastScan = 0, frame = 0;
@@ -24,7 +26,16 @@
     }
   })();
 
-  const active = () => settings.enabled && !settings.disabledSites.includes(siteHost) && rate;
+  const active = () => settings.enabled && !settings.disabledSites.includes(siteHost) && rates;
+
+  // Badge text, or null when this match shouldn't get a badge.
+  function labelFor(m) {
+    if (m.kind === "area") return settings.units ? P.formatArea(m.value) : null;
+    if (m.kind === "weight") return settings.units ? P.formatWeight(m.value) : null;
+    if (m.currency === settings.target || settings.disabledCurrencies.includes(m.currency)) return null;
+    const v = P.convert(m.value, m.currency, settings.target, rates.rates);
+    return v > 0 ? P.formatMoney(v, settings.target, m.plus) : null;
+  }
 
   // ---------- overlay layer ----------
   function ensureLayer() {
@@ -128,11 +139,11 @@
     }
 
     layer.textContent = "";
-    matches = found.map(m => {
+    matches = found.map(m => ({ ...m, label: labelFor(m) })).filter(m => m.label).map(m => {
       const el = document.createElement("div");
       el.className = "b";
       el.hidden = true;
-      el.textContent = m.kind === "area" ? P.formatArea(m.value) : P.formatDkk(m.value * rate.rate, m.plus);
+      el.textContent = m.label;
       const fs = parseFloat(getComputedStyle(m.sNode.parentElement).fontSize) || 16;
       el.style.fontSize = Math.min(15, Math.max(11, fs * 0.72)) + "px";
       layer.appendChild(el);
@@ -175,8 +186,9 @@
     visible.sort((a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left);
 
     const shown = new Set();
-    for (const kind of ["krw", "area"]) {
-      const ofKind = visible.filter(m => m.kind === kind);
+    // Money and units each get their own limit of MAX_VISIBLE.
+    for (const isMoney of [true, false]) {
+      const ofKind = visible.filter(m => (m.kind === "money") === isMoney);
       (settings.showAll ? ofKind : ofKind.slice(0, MAX_VISIBLE)).forEach(m => shown.add(m));
     }
     for (const m of visible) {
@@ -184,6 +196,7 @@
       if (pointer.x >= r.left - 4 && pointer.x <= r.right + 4 && pointer.y >= r.top - 4 && pointer.y <= r.bottom + 4) shown.add(m);
     }
 
+    const placed = [];
     for (const m of matches) {
       if (!shown.has(m)) { m.el.hidden = true; continue; }
       if (m.el.hidden) {
@@ -191,8 +204,16 @@
         m.w = m.el.offsetWidth;
         m.h = m.el.offsetHeight;
       }
-      const x = Math.min(m.rect.right - 10, vw - m.w - 4);
-      const y = Math.max(2, m.rect.top - m.h + 1);
+      let x = Math.min(m.rect.right - 10, vw - m.w - 4);
+      let y = Math.max(2, m.rect.top - m.h + 1);
+      // Prices close together on one line: slide right past the badge in the way, or stack above it.
+      for (const p of placed) {
+        if (x < p.x + p.w + 3 && x + m.w + 3 > p.x && y < p.y + p.h && y + m.h > p.y) {
+          if (p.x + p.w + 3 + m.w <= vw - 4) x = p.x + p.w + 3;
+          else y = p.y - m.h - 2;
+        }
+      }
+      placed.push({ x, y, w: m.w, h: m.h });
       m.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
     }
   }
@@ -223,14 +244,12 @@
     else start();
   }
 
-  function needsRefresh(r) {
-    return !r || !(r.rate > 0) || Date.now() - r.fetchedAt > RATE_MAX_AGE;
-  }
+  const validRates = r => (r && r.rates && r.rates.EUR === 1 ? r : null);
 
-  chrome.storage.local.get(["settings", "rate"], data => {
+  chrome.storage.local.get(["settings", "rates"], data => {
     settings = { ...settings, ...(data.settings || {}) };
-    rate = data.rate && data.rate.rate > 0 ? data.rate : null;
-    if (needsRefresh(data.rate)) chrome.runtime.sendMessage({ type: "refreshRate" }).catch(() => {});
+    rates = validRates(data.rates);
+    if (!rates || Date.now() - rates.fetchedAt > RATE_MAX_AGE) chrome.runtime.sendMessage({ type: "refreshRate" }).catch(() => {});
     if (document.body) apply();
     else addEventListener("DOMContentLoaded", apply, { once: true });
   });
@@ -238,7 +257,7 @@
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
     if (changes.settings) settings = { ...settings, ...changes.settings.newValue };
-    if (changes.rate && changes.rate.newValue && changes.rate.newValue.rate > 0) rate = changes.rate.newValue;
-    if (changes.settings || changes.rate) apply();
+    if (changes.rates && validRates(changes.rates.newValue)) rates = changes.rates.newValue;
+    if (changes.settings || changes.rates) apply();
   });
 })();
