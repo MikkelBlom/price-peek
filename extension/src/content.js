@@ -14,7 +14,17 @@
   let host, layer, observer, scanTimer, lastScan = 0, frame = 0;
   const range = document.createRange();
 
-  const active = () => settings.enabled && !settings.disabledSites.includes(location.hostname) && rate;
+  // Inside embedded frames, the site toggle follows the tab's top-level site.
+  const siteHost = (() => {
+    try {
+      const a = location.ancestorOrigins;
+      return a && a.length ? new URL(a[a.length - 1]).hostname : location.hostname;
+    } catch (e) {
+      return location.hostname;
+    }
+  })();
+
+  const active = () => settings.enabled && !settings.disabledSites.includes(siteHost) && rate;
 
   // ---------- overlay layer ----------
   function ensureLayer() {
@@ -39,22 +49,33 @@
   }
 
   // ---------- scanning ----------
-  // Inline elements are grouped with their block ancestor so prices split across spans ("3억 <b>5,000</b>") still match.
-  function blockOf(el, cache) {
+  // Text is grouped so prices split across elements still match:
+  //  - inline elements join their block ancestor directly ("3억 <b>5,000</b>"),
+  //  - flex/grid items join their container with a space between items
+  //    ("<strong>48,500</strong><span>원</span>" in a flex row, as Naver does).
+  const MAX_FLEX_CLIMB = 3;
+
+  function displayOf(el, cache) {
+    let d = cache.get(el);
+    if (d === undefined) cache.set(el, (d = getComputedStyle(el).display));
+    return d;
+  }
+
+  function nearestBlock(el, cache) {
     let cur = el;
-    const chain = [];
-    while (cur && cur !== document.body) {
-      if (cache.has(cur)) break;
-      chain.push(cur);
-      if (!getComputedStyle(cur).display.startsWith("inline")) {
-        cache.set(cur, cur);
-        break;
-      }
-      cur = cur.parentElement;
+    while (cur && cur !== document.body && displayOf(cur, cache).startsWith("inline")) cur = cur.parentElement;
+    return cur || document.body;
+  }
+
+  function contextOf(el, cache) {
+    const item = nearestBlock(el, cache);
+    let block = item;
+    for (let i = 0; i < MAX_FLEX_CLIMB && block !== document.body; i++) {
+      const parent = block.parentElement;
+      if (!parent || !/flex|grid/.test(displayOf(parent, cache))) break;
+      block = nearestBlock(parent, cache);
     }
-    const block = cur && cache.has(cur) ? cache.get(cur) : document.body;
-    for (const c of chain) cache.set(c, block);
-    return block;
+    return { item, block };
   }
 
   function scan() {
@@ -73,24 +94,31 @@
       },
     });
     for (let n; (n = walker.nextNode()); ) {
-      const block = blockOf(n.parentElement, cache);
-      if (!current || current.block !== block) groups.push((current = { block, nodes: [] }));
+      const { item, block } = contextOf(n.parentElement, cache);
+      if (!current || current.block !== block) groups.push((current = { block, nodes: [], items: [] }));
       current.nodes.push(n);
+      current.items.push(item);
     }
 
     const found = [];
     for (const g of groups) {
-      const text = g.nodes.map(n => n.nodeValue).join("");
+      // Virtual text: node values, with a space wherever the text crosses into another flex/grid item.
+      const offsets = [];
+      let text = "";
+      g.nodes.forEach((n, i) => {
+        if (i > 0 && g.items[i] !== g.items[i - 1]) text += " ";
+        offsets.push(text.length);
+        text += n.nodeValue;
+      });
       const hits = P.findMatches(text);
       if (!hits.length) continue;
-      const offsets = [];
-      let acc = 0;
-      for (const n of g.nodes) { offsets.push(acc); acc += n.nodeValue.length; }
       const locate = (pos, isEnd) => {
         for (let i = g.nodes.length - 1; i >= 0; i--) {
-          if (offsets[i] < pos || (!isEnd && offsets[i] === pos)) return [g.nodes[i], pos - offsets[i]];
+          if (offsets[i] < pos || (!isEnd && offsets[i] === pos)) {
+            return [g.nodes[i], Math.min(pos - offsets[i], g.nodes[i].nodeValue.length)];
+          }
         }
-        return [g.nodes[0], pos];
+        return [g.nodes[0], 0];
       };
       for (const h of hits) {
         const [sNode, sOff] = locate(h.start, false);

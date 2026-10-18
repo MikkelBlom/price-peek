@@ -49,6 +49,12 @@ test("multiple prices and ranges", () => {
   assert.deepEqual(krw("12억 5,000 (전용 84㎡)"), [1250000000]);
 });
 
+test("Naver shopping text joined across flex items", () => {
+  assert.deepEqual(krw("[올리브영기프트카드] 5만원권 (즉시사용"), [50000]);
+  assert.deepEqual(krw("50,000 원"), [50000]);
+  assert.deepEqual(krw("3% 48,500 원"), [48500]);
+});
+
 test("English multipliers", () => {
   assert.deepEqual(krw("1.2 million won"), [1200000]);
   assert.deepEqual(krw("KRW 2.3bn"), [2300000000]);
