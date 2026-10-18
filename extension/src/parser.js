@@ -139,12 +139,13 @@
   }
 
   // A value typed into a form field. Uses its own currency if it has one ("₩500,000", "50만"),
-  // otherwise a bare number ("500000") takes the currency named around the field.
-  function parseFieldValue(value, context) {
+  // otherwise a bare number ("500000") takes the currency named around the field, or failing that
+  // the page's main currency (fallback), since translated pages can lose the label ("원" → "one").
+  function parseFieldValue(value, context, fallback) {
     const money = findMatches(value).find(m => m.kind === "money");
     if (money) return money;
     if (!/^\s*\d[\d.,\s ]*$/.test(value)) return null;
-    const currency = guessCurrency(context);
+    const currency = guessCurrency(context) || fallback;
     const n = parseNum(value.trim());
     return currency && n > 0 ? { kind: "money", currency, value: n, plus: false } : null;
   }

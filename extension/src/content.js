@@ -144,6 +144,7 @@
     }
 
     for (const m of matches) m.el.remove();
+    pageCurrency = mainCurrency(found);
     matches = found.map(m => ({ ...m, label: labelFor(m) })).filter(m => m.label).map(m => {
       const el = document.createElement("div");
       el.className = "b";
@@ -173,6 +174,14 @@
   // named around the field (placeholder, label, nearby text), e.g. Naver's "최소 ___ 원" price filter.
   const FIELD_SELECTOR = "input:not([type]), input[type=text], input[type=search], input[type=number], input[type=tel], textarea";
   const fields = new Map(); // input element → { el, label }
+  let pageCurrency = null; // the currency most prices on the page use (at least 3), for bare numbers in fields
+
+  function mainCurrency(found) {
+    const counts = {};
+    for (const m of found) if (m.kind === "money") counts[m.currency] = (counts[m.currency] || 0) + 1;
+    const [top] = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    return top && top[1] >= 3 ? top[0] : null;
+  }
 
   function fieldContext(input) {
     const parts = [input.placeholder, input.getAttribute("aria-label"), input.name, input.id];
@@ -188,7 +197,7 @@
 
   function scanField(input) {
     const value = (input.value || "").slice(0, 200);
-    const m = value.trim() && P.parseFieldValue(value, fieldContext(input));
+    const m = value.trim() && P.parseFieldValue(value, fieldContext(input), pageCurrency);
     const label = m && labelFor(m);
     let f = fields.get(input);
     if (!label) {

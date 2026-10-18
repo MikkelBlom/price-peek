@@ -137,6 +137,8 @@ test("typed values in form fields", () => {
   assert.deepEqual(field("50만", ""), ["KRW", 500000]);
   assert.deepEqual(field("₩300,000", "Budget"), ["KRW", 300000]);
   assert.equal(field("500000", "Quantity"), null);
+  // translated page: "원 ~ 원" became "one ~ one"; the page's main currency fills in
+  assert.deepEqual((m => [m.currency, m.value])(parseFieldValue("500000", "~onesearch", "KRW")), ["KRW", 500000]);
   assert.equal(field("hello", "원"), null);
   assert.equal(guessCurrency("Price in EUR"), "EUR");
   assert.equal(guessCurrency("Europe"), null);
