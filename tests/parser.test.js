@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { findMatches, convert, formatMoney, formatArea, formatWeight } = require("../extension/src/parser.js");
+const { findMatches, convert, guessCurrency, parseFieldValue, formatMoney, formatArea, formatWeight } = require("../extension/src/parser.js");
 
 const money = text => findMatches(text).filter(m => m.kind === "money").map(m => [m.currency, Math.round(m.value * 100) / 100]);
 const krw = text => findMatches(text).filter(m => m.kind === "money" && m.currency === "KRW").map(m => m.value);
@@ -54,6 +54,10 @@ test("Naver shopping text joined across flex items", () => {
   assert.deepEqual(krw("[올리브영기프트카드] 5만원권 (즉시사용"), [50000]);
   assert.deepEqual(krw("50,000 원"), [50000]);
   assert.deepEqual(krw("3% 48,500 원"), [48500]);
+  // Coupang: "15" and "310,000원" in neighbouring flex items, joined with an en space
+  assert.deepEqual(krw("15% 310,000원"), [310000]);
+  assert.deepEqual(krw("15 310,000원"), [310000]);
+  assert.deepEqual(krw("48,500 원"), [48500]);
 });
 
 test("dollars", () => {
@@ -124,6 +128,18 @@ test("area and weight, metric only", () => {
   assert.deepEqual(measures("삼겹살 1근"), [["weight", 600]]);
   assert.deepEqual(measures("3근무"), []);
   assert.deepEqual(measures("800 sq ft · 5 lbs"), []);
+});
+
+test("typed values in form fields", () => {
+  const field = (v, ctx) => { const m = parseFieldValue(v, ctx); return m && [m.currency, m.value]; };
+  assert.deepEqual(field("500000", "최소 원 ~ 최대 원"), ["KRW", 500000]);
+  assert.deepEqual(field("1,200", "Max price ($)"), ["USD", 1200]);
+  assert.deepEqual(field("50만", ""), ["KRW", 500000]);
+  assert.deepEqual(field("₩300,000", "Budget"), ["KRW", 300000]);
+  assert.equal(field("500000", "Quantity"), null);
+  assert.equal(field("hello", "원"), null);
+  assert.equal(guessCurrency("Price in EUR"), "EUR");
+  assert.equal(guessCurrency("Europe"), null);
 });
 
 test("conversion through EUR-based rates", () => {

@@ -131,6 +131,24 @@
     return out.sort((a, b) => a.start - b.start);
   }
 
+  // First currency symbol/code/word in some text, e.g. a price filter's label "최소 ___ 원". Null if none.
+  const HINT_RE = new RegExp(String.raw`(?<![A-Za-z])(${alt({ ...PREFIX, ...SUFFIX })})(?![A-Za-z])`, "i");
+  function guessCurrency(text) {
+    const m = text && text.match(HINT_RE);
+    return m ? lookup(PREFIX, m[1]) || lookup(SUFFIX, m[1]) : null;
+  }
+
+  // A value typed into a form field. Uses its own currency if it has one ("₩500,000", "50만"),
+  // otherwise a bare number ("500000") takes the currency named around the field.
+  function parseFieldValue(value, context) {
+    const money = findMatches(value).find(m => m.kind === "money");
+    if (money) return money;
+    if (!/^\s*\d[\d.,\s ]*$/.test(value)) return null;
+    const currency = guessCurrency(context);
+    const n = parseNum(value.trim());
+    return currency && n > 0 ? { kind: "money", currency, value: n, plus: false } : null;
+  }
+
   // rates: units of each currency per 1 EUR (EUR itself = 1).
   function convert(value, from, to, rates) {
     if (from === to) return value;
@@ -162,7 +180,7 @@
   const formatArea = m2 => `${m2 < 10 ? dk(m2, 1) : dk(Math.round(m2))} m²`;
   const formatWeight = g => (g < 1000 ? `${dk(Math.round(g))} g` : `${dk(g / 1000, 1)} kg`);
 
-  const api = { CURRENCIES, findMatches, parseNum, convert, formatMoney, formatDkk, formatArea, formatWeight };
+  const api = { CURRENCIES, findMatches, parseNum, guessCurrency, parseFieldValue, convert, formatMoney, formatDkk, formatArea, formatWeight };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.KrwParser = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

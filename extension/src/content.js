@@ -6,8 +6,9 @@
   const MAX_VISIBLE = 3;
   const RATE_MAX_AGE = 12 * 60 * 60 * 1000;
   const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT", "SELECT", "OPTION", "TEMPLATE", "SVG", "CANVAS", "IFRAME"]);
-  // Text nodes worth grouping: digits, or a currency/unit marker that may sit in its own element next to the number.
-  const CANDIDATE = /[\d₩￦원억만조천백평근$€£¥￥฿円元块塊万萬億亿兆千百坪畳帖]|บาท|\b(?:USD|EUR|GBP|JPY|CNY|RMB|SEK|NOK|CHF|THB|KRW|DKK)\b|\b(?:dollars?|euros?|yen|yuan|baht|won)\b/i;
+  // Every match needs a digit, so text groups without one are skipped before the (slower) parser runs.
+  const CANDIDATE = /\d/;
+  const ITEM_GAP = " ";
 
   let settings = { enabled: true, disabledSites: [], showAll: false, target: "DKK", disabledCurrencies: [], units: true };
   let rates = null;
@@ -56,6 +57,7 @@
 
   function clearBadges() {
     matches = [];
+    fields.clear();
     if (layer) layer.textContent = "";
   }
 
@@ -97,11 +99,12 @@
     const cache = new Map();
     const groups = [];
     let current = null;
+    // Every text node is kept, even ones without digits: a lone "%" between "15" and "310,000원" must stay a boundary.
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
       acceptNode(n) {
         const p = n.parentElement;
         if (!p || SKIP_TAGS.has(p.tagName.toUpperCase()) || p.isContentEditable) return NodeFilter.FILTER_REJECT;
-        return CANDIDATE.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+        return NodeFilter.FILTER_ACCEPT;
       },
     });
     for (let n; (n = walker.nextNode()); ) {
@@ -113,14 +116,16 @@
 
     const found = [];
     for (const g of groups) {
-      // Virtual text: node values, with a space wherever the text crosses into another flex/grid item.
+      // Virtual text: node values, with an en space wherever the text crosses into another flex/grid item.
+      // An en space still counts as whitespace ("48,500 원") but is never a thousands separator ("15 310,000원").
       const offsets = [];
       let text = "";
       g.nodes.forEach((n, i) => {
-        if (i > 0 && g.items[i] !== g.items[i - 1]) text += " ";
+        if (i > 0 && g.items[i] !== g.items[i - 1]) text += ITEM_GAP;
         offsets.push(text.length);
         text += n.nodeValue;
       });
+      if (!CANDIDATE.test(text)) continue;
       const hits = P.findMatches(text);
       if (!hits.length) continue;
       const locate = (pos, isEnd) => {
@@ -138,17 +143,21 @@
       }
     }
 
-    layer.textContent = "";
+    for (const m of matches) m.el.remove();
     matches = found.map(m => ({ ...m, label: labelFor(m) })).filter(m => m.label).map(m => {
       const el = document.createElement("div");
       el.className = "b";
       el.hidden = true;
       el.textContent = m.label;
-      const fs = parseFloat(getComputedStyle(m.sNode.parentElement).fontSize) || 16;
+      const style = getComputedStyle(m.sNode.parentElement);
+      const fs = parseFloat(style.fontSize) || 16;
       el.style.fontSize = Math.min(15, Math.max(11, fs * 0.72)) + "px";
       layer.appendChild(el);
-      return { ...m, el, w: 0, h: 0 };
+      // Crossed-out old prices rank below everything else.
+      const struck = style.textDecorationLine.includes("line-through") || !!m.sNode.parentElement.closest("del, s, strike");
+      return { ...m, el, w: 0, h: 0, rank: struck ? 0 : fs };
     });
+    scanFields();
     schedule();
   }
 
@@ -159,6 +168,58 @@
     scanTimer = setTimeout(scan, wait);
   }
 
+  // ---------- form fields ----------
+  // Typed values aren't text nodes, so fields are read separately. A bare number takes the currency
+  // named around the field (placeholder, label, nearby text), e.g. Naver's "최소 ___ 원" price filter.
+  const FIELD_SELECTOR = "input:not([type]), input[type=text], input[type=search], input[type=number], input[type=tel], textarea";
+  const fields = new Map(); // input element → { el, label }
+
+  function fieldContext(input) {
+    const parts = [input.placeholder, input.getAttribute("aria-label"), input.name, input.id];
+    if (input.labels) for (const l of input.labels) parts.push(l.textContent);
+    let p = input.parentElement;
+    for (let i = 0; i < 3 && p; i++, p = p.parentElement) {
+      const t = p.textContent;
+      if (t.length > 300) break;
+      parts.push(t);
+    }
+    return parts.filter(Boolean).join(" ");
+  }
+
+  function scanField(input) {
+    const value = (input.value || "").slice(0, 200);
+    const m = value.trim() && P.parseFieldValue(value, fieldContext(input));
+    const label = m && labelFor(m);
+    let f = fields.get(input);
+    if (!label) {
+      if (f) { f.el.remove(); fields.delete(input); }
+      return;
+    }
+    if (!f) {
+      f = { el: document.createElement("div") };
+      f.el.className = "b";
+      layer.appendChild(f.el);
+      fields.set(input, f);
+    }
+    if (f.label !== label) {
+      f.label = f.el.textContent = label;
+      f.w = f.el.offsetWidth;
+      f.h = f.el.offsetHeight;
+    }
+  }
+
+  function scanFields() {
+    for (const [input, f] of fields) if (!input.isConnected) { f.el.remove(); fields.delete(input); }
+    document.querySelectorAll(FIELD_SELECTOR).forEach(scanField);
+  }
+
+  function onFieldInput(e) {
+    const t = e.target;
+    if (!observer || !layer || !t || !t.matches || !t.matches(FIELD_SELECTOR)) return;
+    scanField(t);
+    schedule();
+  }
+
   // ---------- positioning ----------
   function schedule() {
     if (!frame) frame = requestAnimationFrame(render);
@@ -166,8 +227,22 @@
 
   function render() {
     frame = 0;
-    if (!matches.length) return;
+    if (!matches.length && !fields.size) return;
     const vw = innerWidth, vh = innerHeight;
+    const placed = [];
+
+    // Field badges always show, and go first so price badges make room for them.
+    for (const [input, f] of fields) {
+      const r = input.getBoundingClientRect();
+      const off = !r.width || !r.height || r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw;
+      f.el.hidden = off;
+      if (off) continue;
+      const x = Math.min(r.right - 10, vw - f.w - 4);
+      const y = Math.max(2, r.top - f.h + 1);
+      placed.push({ x, y, w: f.w, h: f.h });
+      f.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    }
+
     const visible = [];
     for (const m of matches) {
       m.rect = null;
@@ -183,7 +258,8 @@
       m.rect = r;
       visible.push(m);
     }
-    visible.sort((a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left);
+    // The limited set favours the biggest text on screen (the main prices), then top to bottom.
+    visible.sort((a, b) => b.rank - a.rank || a.rect.top - b.rect.top || a.rect.left - b.rect.left);
 
     const shown = new Set();
     // Money and units each get their own limit of MAX_VISIBLE.
@@ -196,7 +272,6 @@
       if (pointer.x >= r.left - 4 && pointer.x <= r.right + 4 && pointer.y >= r.top - 4 && pointer.y <= r.bottom + 4) shown.add(m);
     }
 
-    const placed = [];
     for (const m of matches) {
       if (!shown.has(m)) { m.el.hidden = true; continue; }
       if (m.el.hidden) {
@@ -219,16 +294,24 @@
   }
 
   // ---------- wiring ----------
+  let wired = false;
+
   function start() {
     if (observer) return;
     observer = new MutationObserver(requestScan);
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    addEventListener("scroll", schedule, { capture: true, passive: true });
-    addEventListener("resize", schedule, { passive: true });
-    addEventListener("mousemove", e => {
-      pointer = { x: e.clientX, y: e.clientY };
-      if (matches.length) schedule();
-    }, { passive: true });
+    if (!wired) {
+      // Listeners stay after stop(); they do nothing while there is nothing to show.
+      wired = true;
+      addEventListener("scroll", schedule, { capture: true, passive: true });
+      addEventListener("resize", schedule, { passive: true });
+      addEventListener("input", onFieldInput, { capture: true, passive: true });
+      addEventListener("change", onFieldInput, { capture: true, passive: true });
+      addEventListener("mousemove", e => {
+        pointer = { x: e.clientX, y: e.clientY };
+        if (matches.length) schedule();
+      }, { passive: true });
+    }
     scan();
   }
 
