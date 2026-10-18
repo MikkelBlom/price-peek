@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KRW demo page</title>
+<style>
+  body { font: 16px/1.6 "Segoe UI", sans-serif; max-width: 760px; margin: 40px auto; padding: 0 16px; color: #222; }
+  .price { color: #b8460b; font-weight: 700; font-size: 26px; }
+  .card { border: 1px solid #ddd; border-radius: 10px; padding: 14px 18px; margin: 18px 0; }
+  .tall { height: 900px; }
+</style>
+</head>
+<body>
+  <!-- Test page for the content script outside Chrome: a stubbed chrome API, then the real scripts. -->
+  <h1>Demo listings</h1>
+  <div class="card"><span class="price">₩1,500,000+</span> /30days · Total <b>₩0</b></div>
+  <div class="card">매매 <span class="price">12억 <span>5,000</span></span> · 전용 84㎡ · 25평</div>
+  <div class="card">보증금 1억 / 월세 80만 · 관리비 15만원</div>
+  <div class="card">3억~4억 · KRW 1.500.000 · 5천원 · she won 3 games · 2024년</div>
+  <div class="tall"></div>
+  <div class="card">Further down: <span class="price">₩350,000,000</span></div>
+  <div class="card" id="late"></div>
+  <script>
+    window.chrome = {
+      storage: {
+        local: { get: (keys, cb) => cb({ settings: { enabled: true, disabledSites: [], showAll: false }, rate: { rate: 0.004694, date: "2026-10-16", source: "test", fetchedAt: Date.now() } }) },
+        onChanged: { addListener() {} },
+      },
+      runtime: { sendMessage: () => Promise.resolve() },
+    };
+    setTimeout(() => { document.getElementById("late").textContent = "Loaded later: 150만원"; }, 1500);
+  </script>
+  <script src="../extension/src/parser.js"></script>
+  <script src="../extension/src/content.js"></script>
+</body>
+</html>

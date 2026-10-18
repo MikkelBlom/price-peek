@@ -1,0 +1,31 @@
+:root {
+  --bg: #ffffff; --fg: #16181d; --muted: #6a6f7b; --line: #e6e8ec; --track: #d5d8de; --on: #16181d; --knob: #ffffff; --err: #c8102e;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #1a1d24; --fg: #eceef3; --muted: #9aa0ad; --line: #2c313b; --track: #3a404b; --on: #eceef3; --knob: #1a1d24; --err: #ff5468; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; width: 280px; background: var(--bg); color: var(--fg); font: 13px/1.4 "Segoe UI", system-ui, sans-serif; }
+header { display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px; border-bottom: 1px solid var(--line); }
+header > div { flex: 1; min-width: 0; }
+.badge { background: #16181d; color: #fff; font-weight: 600; padding: 0 .55em; line-height: 1.75; border-radius: 6px 6px 6px 1px; flex: none; }
+.rate { font-weight: 600; font-variant-numeric: tabular-nums; }
+.meta { color: var(--muted); font-size: 12px; }
+.meta.err { color: var(--err); }
+#refresh { border: 1px solid var(--line); background: none; color: var(--fg); width: 30px; height: 30px; border-radius: 8px; font-size: 16px; cursor: pointer; flex: none; }
+#refresh:hover { background: var(--line); }
+#refresh.spin { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--line); }
+.row:last-of-type { border-bottom: 0; }
+.row span { flex: 1; min-width: 0; }
+.row b { font-weight: 600; overflow-wrap: anywhere; }
+.row small { display: block; color: var(--muted); font-size: 11.5px; }
+.row input { position: absolute; opacity: 0; pointer-events: none; }
+.row i { width: 34px; height: 20px; border-radius: 10px; background: var(--track); position: relative; flex: none; transition: background .15s; }
+.row i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--knob); transition: transform .15s; }
+.row input:checked + i { background: var(--on); }
+.row input:checked + i::after { transform: translateX(14px); }
+.row input:focus-visible + i { outline: 2px solid var(--on); outline-offset: 2px; }
+.row.off { opacity: .45; pointer-events: none; }
