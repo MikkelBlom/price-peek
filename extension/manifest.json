@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Price converter (₩ → kr.)",
+  "name": "Price Peek",
   "version": "1.2.0",
   "description": "Shows prices in won, dollars, euros, yen and more in Danish kroner (or your pick) as a small badge on the price.",
   "permissions": ["storage", "activeTab"],

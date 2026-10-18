@@ -1,4 +1,4 @@
-# Price converter (₩ → kr.)
+# Price Peek
 
 Chrome extension that finds prices on any page and shows the converted amount as a small dark badge on the price's top-right corner. Converts to Danish kroner by default; the popup can switch to any supported currency.
 

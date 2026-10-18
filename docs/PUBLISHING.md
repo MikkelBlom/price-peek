@@ -19,7 +19,7 @@ Step-by-step for putting this extension on the Chrome Web Store. Field names mat
 The ZIP must have `manifest.json` at its root, so zip the *contents* of the `extension` folder, not the folder itself. From the repo root in PowerShell:
 
 ```powershell
-Compress-Archive -Path extension\* -DestinationPath price-converter.zip -Force
+Compress-Archive -Path extension\* -DestinationPath price-peek.zip -Force
 ```
 
 ## 4. Upload
