@@ -1,0 +1,34 @@
+name: Bug report
+description: A wrong amount, a missing badge, or a badge where there shouldn't be one.
+labels: [bug]
+body:
+  - type: input
+    id: price
+    attributes:
+      label: Price text
+      description: Copy the price exactly as it appears on the page.
+      placeholder: "3억 5,000만원"
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Page address
+      placeholder: https://...
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+      placeholder: "Badge said 17 kr., expected about 1,7 mio. kr."
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Target currency in the popup
+      placeholder: DKK
+  - type: input
+    id: version
+    attributes:
+      label: Price Peek version
+      description: Shown in chrome://extensions.

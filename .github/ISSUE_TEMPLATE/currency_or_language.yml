@@ -1,0 +1,28 @@
+name: Currency or language request
+description: A currency, number format or unit to support, or a language for the popup.
+labels: [currency/language]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What should Price Peek support?
+      options:
+        - A new currency (to detect or convert to)
+        - A number or price format
+        - A metric unit
+        - A language for the popup
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: How prices or units are written, copied from real pages if you can.
+      placeholder: "R$ 1.299,90 · 1.299,90 BRL"
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: A page where it appears
+      placeholder: https://...

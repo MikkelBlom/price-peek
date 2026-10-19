@@ -49,3 +49,9 @@ node --test tests/parser.test.js
 ```
 
 `tests/demo.html` (badges) and `tests/popup-demo.html` (popup) run the real scripts outside Chrome with a stubbed `chrome` API. Serve the repo root (`python -m http.server 8765`) and open them on `http://localhost:8765/tests/`. `demo.html?target=EUR` tries another target currency.
+
+## Contributing and license
+
+Bug reports, currency and language requests, and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Price Peek is **not open source**. The code is public to read and to contribute to, but it may not be copied, redistributed or republished. See [LICENSE](LICENSE).
