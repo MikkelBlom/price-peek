@@ -2,6 +2,12 @@
 
 Chrome extension that finds prices on any page and shows the converted amount as a small dark badge on the price's top-right corner. Converts to Danish kroner by default; the popup can switch to any supported currency.
 
+![Price Peek](store/marquee.png)
+
+## Why
+
+I'm planning an exchange semester in Korea, and budgeting for it meant checking a lot of Korean prices: housing, groceries, everyday costs. Every price meant copying it, searching "xx KRW to DKK", waiting and reading. A few seconds each, but constantly. Housing was the worst: I'd fall for a place from the photos, open the listing, and only then find out it was over budget. Price Peek puts the kroner amount on the price itself, so it's visible at a glance, before clicking anything.
+
 ## Install
 
 1. Open `chrome://extensions` and turn on **Developer mode** (top right).
