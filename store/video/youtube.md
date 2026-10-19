@@ -19,3 +19,7 @@ Price Peek is a free Chrome extension that finds prices on any website and shows
 Get it on the Chrome Web Store (link coming soon)
 
 Voice: ElevenLabs
+
+## Tags
+
+Price Peek, currency converter, Chrome extension, price converter, currency conversion, online shopping, shopping abroad, exchange rate, Korean won, KRW to DKK, yen to kroner, euro converter, browser extension, price comparison, travel shopping
