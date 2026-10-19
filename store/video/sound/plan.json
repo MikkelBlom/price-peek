@@ -1,0 +1,2 @@
+{"duration": 30, "bpm": 120, "anchor": 3.5,
+ "sections": [{"role": "intro", "start": 0, "end": 3.5}, {"role": "full", "start": 3.5, "end": 25.5}, {"role": "ending", "start": 25.5, "end": 30}]}

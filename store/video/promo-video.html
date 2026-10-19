@@ -273,7 +273,7 @@ const T_D = { popIn: 13.55, cursorIn: 14.3, atSel: 15.0, open: 15.1, glide: 15.6
 
 const TYPE1 = { t0: 20.45, gap: .2, text: "500000", cur: "KRW", focus: 20.1 };
 const TYPE2 = { t0: 22.3, gap: .22, text: "1200", cur: "USD", focus: 21.95 };
-const T_E = { dolly: 19.0, zoom: 24.15, zoomEnd: 25.35 };
+const T_E = { dolly: 19.0, zoom: 24.3, zoomEnd: 25.5 };
 
 const NAME_CHARS = masked($("name"), "Price Peek", { chars: true });
 const TAG_WORDS = masked($("tag"), "Any price, in |your| currency.");
@@ -281,7 +281,7 @@ const TAG_WORDS = masked($("tag"), "Any price, in |your| currency.");
 const FLOATS = [["7.480 kr.", 150, 120, 1], ["€241", 1050, 96, 0], ["1.654 kr.", 1040, 590, 2], ["$271", 190, 580, 0],
   ["1,7 mio. kr.", 960, 250, 0], ["149 kr.", 120, 340, 2], ["£203", 1130, 420, 1], ["1.261 kr.", 330, 640, 1]];
 $("floats").innerHTML = FLOATS.map(([s, x, y], i) => `<span class="b" id="f${i}" style="left:${x}px;top:${y}px">${s}</span>`).join("");
-const T_F = { logo: 25.5, name: 25.8, tag: 26.35 };
+const T_F = { logo: 25.65, name: 25.95, tag: 26.5 };
 
 // ---------- camera ----------
 // world point (cx, cy) sits at the screen centre, zoomed by s

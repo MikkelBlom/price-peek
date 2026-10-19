@@ -1,49 +1,36 @@
 # Price Peek promo video: voice-over script
 
-About 30 seconds, about 75 words. Timecodes match `price-peek-promo.mp4` (scene changes are fixed, so read each line inside its window; a little air at the end of a window is fine).
+About 30 seconds and 60 words. Timecodes match the current animation (hero hit at 25.5 s). Lines sit inside fixed windows; the pauses are part of the design: the music and sound effects carry those moments.
 
-Tone: warm, upbeat, a little playful, never shouty. Think "friend showing you a neat trick", not "TV ad". Medium pace (about 150 words per minute).
+Tone: warm, upbeat, a little playful, never shouty, like a friend showing you a neat trick rather than a TV ad. Medium pace (about 2.8 words per second).
 
-| Time | On screen | Voice-over |
+| Time (s) | On screen | Voice-over |
 |---|---|---|
-| 0:00 – 0:03 | Price chips pop up: ₩1,500,000, $249, 19,99 €, ¥42,800, £219, ฿8,490 | Shopping from Seoul, New York or Tokyo? |
-| 0:03 – 0:07 | Dark badges land on each price with the amount in kroner | Price Peek shows every price in your own currency, right on the price. |
-| 0:07 – 0:13 | 3억 5,000만원, 3万円 and 19,99 € get their badges | It reads prices the local way, too: Korean won, Japanese yen, European commas. |
-| 0:13 – 0:19.5 | The popup: pick Euro, the badge switches to €241 | Think in euros instead? Pick from eleven currencies in one click. |
-| 0:19.5 – 0:25.5 | Typing 500000 and 1200 into a price filter; the badge updates per keystroke | Typing a budget or a price filter? You see what it means as you type. |
-| 0:25.5 – 0:30 | End card: icon, Price Peek, "Any price, in your currency." | Price Peek. Any price, in your currency. |
+| 0.3 – 2.8 | Price chips pop in: ₩1,500,000, $249, 19,99 €, ¥42,800, £219, ฿8,490 | Shopping from Seoul, New York or Tokyo? |
+| 2.8 – 3.4 | | *(pause: the headline swaps)* |
+| 3.4 – 6.6 | "Every price, in your currency." Badges land on every chip (3.5–4.75) | Price Peek shows it in your currency, right on the price. |
+| 6.6 – 7.6 | Whip-pan | *(pause)* |
+| 7.6 – 12.4 | 3억 5,000만원, 3万円, 19,99 € get their badges | It reads prices the local way, too: Korean won, Japanese yen, European commas. |
+| 12.4 – 13.8 | Camera moves to ¥42,800 | *(pause)* |
+| 13.8 – 17.4 | Popup swings in, cursor picks Euro (click at 16.3), badge flips to €241 | Think in euros instead? Pick from eleven currencies in one click. |
+| 17.4 – 19.8 | Hold, dolly through | *(pause)* |
+| 19.8 – 23.4 | Typing 500000 and $1,200; the badge updates per keystroke | Typing a budget? See what it's worth as you type. |
+| 23.4 – 26.0 | Zoom into the badge, riser, **hit at 25.5**, logo pops | *(silence: let the build and the hit play)* |
+| 26.0 – 26.6 | "Price Peek" rises | Price Peek. |
+| 26.6 – 26.9 | | *(short beat)* |
+| 26.9 – 28.8 | Tagline rises | Any price, in your currency. |
+| 28.8 – 30 | Logo rings out | *(silence)* |
 
-## Plain text (paste into the voice tool)
+## Plain text (one clip per line in the voice tool)
 
 ```
 Shopping from Seoul, New York or Tokyo?
-Price Peek shows every price in your own currency, right on the price.
+Price Peek shows it in your currency, right on the price.
 It reads prices the local way, too: Korean won, Japanese yen, European commas.
 Think in euros instead? Pick from eleven currencies in one click.
-Typing a budget or a price filter? You see what it means as you type.
-Price Peek. Any price, in your currency.
+Typing a budget? See what it's worth as you type.
+Price Peek.
+Any price, in your currency.
 ```
 
-## Making the voice
-
-Recommended: **ElevenLabs** (elevenlabs.io). The best-sounding English voices right now, and the free tier (about 10 minutes of audio a month, needs an account) is enough for this script. On the free plan ElevenLabs asks for attribution and limits commercial use, so for a store video either credit them in the YouTube description or use the cheapest paid plan, which includes a commercial licence. Check their current terms before publishing.
-
-Good free alternatives:
-- **Microsoft Edge "Read aloud"** or the `edge-tts` Python package: natural neural voices (try `en-US-AndrewNeural` or `en-GB-SoniaNeural`), no account. Licensing for commercial use is unclear.
-- **Your own voice** recorded on a phone in a quiet room often beats synthetic voices for a small product video.
-
-Generate each line as its own clip if the tool allows it, so you can place them at the timecodes above.
-
-## Adding it to the video
-
-The rendered video is silent on purpose: synthesized sound effects sounded cheap, and good promo videos are carried by a real music bed plus the voice.
-
-**Music:** pick a track around **120 BPM** (the animation's beats land on a 0.5 s grid: badges pop at 3.5, 3.75, 4.0 … and scene moves start on whole seconds). The YouTube Audio Library (YouTube Studio → Audio library, filter by "Attribution not required") is free for videos posted on YouTube, which is exactly where this one goes. Look for light, bright electronic or indie-pop; avoid anything with vocals.
-
-Save the voice as `store/video/voiceover.mp3` and the music as `store/video/music.mp3` (both lined up to start at 0:00), then from the repo root:
-
-```bash
-ffmpeg -i store/video/price-peek-promo.mp4 -i store/video/music.mp3 -i store/video/voiceover.mp3 -filter_complex "[1:a]atrim=0:30,afade=t=out:st=28:d=2,volume=0.35[m];[2:a]volume=1.0[vo];[m][vo]amix=inputs=2:duration=first:normalize=0[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -shortest store/video/price-peek-promo-final.mp4
-```
-
-Music at 0.35 sits under the voice; raise it if the voice is quiet.
+Generate each line as its own clip so each can be placed at its timecode; the mix ducks the music under each line.

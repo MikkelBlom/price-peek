@@ -1,0 +1,17 @@
+[
+  {"name": "whoosh_pullback", "prompt": "a single smooth airy whoosh sound effect, air swoosh passing by slowly", "duration": 3, "seeds": 6, "trim": true},
+  {"name": "swish_whip", "prompt": "a single fast swish sound effect, quick sharp air swipe", "duration": 3, "seeds": 6, "trim": true},
+  {"name": "whoosh_short", "prompt": "a single short soft whoosh sound effect, light air swipe", "duration": 3, "seeds": 6, "trim": true},
+  {"name": "whoosh_deep", "prompt": "a single deep cinematic whoosh sound effect, low airy swell passing by", "duration": 3, "seeds": 6, "trim": true},
+  {"name": "zoom_rush", "prompt": "an accelerating whoosh rushing closer and closer, building intensity, ending abruptly", "duration": 3, "seeds": 6},
+  {"name": "riser", "prompt": "tension riser sound effect, rising filtered noise sweep with shimmering synth, ends abruptly at the peak", "duration": 3, "seeds": 6},
+  {"name": "impact", "prompt": "a single deep cinematic boom impact with sub bass drop", "duration": 4, "seeds": 6, "trim": true},
+  {"name": "pop", "prompt": "a single soft bubble pop sound effect, cute user interface pop", "duration": 3, "seeds": 8, "trim": true},
+  {"name": "card_flip", "prompt": "a single playing card being flipped over on a table", "duration": 3, "seeds": 6, "trim": true},
+  {"name": "thud_soft", "prompt": "a single soft muted thud of a light object landing on a table", "duration": 3, "seeds": 6, "trim": true},
+  {"name": "tick_soft", "prompt": "a single very soft tiny tick sound, subtle user interface tick", "duration": 3, "seeds": 6, "trim": true},
+  {"name": "key_press", "prompt": "a single laptop keyboard key press, close up", "duration": 3, "seeds": 8, "trim": true},
+  {"name": "mouse_click", "prompt": "a single computer mouse click, close up", "duration": 3, "seeds": 6, "trim": true},
+  {"name": "sonic_logo", "prompt": "a bright pleasant two note marimba and glass bell chime, uplifting logo sound, ringing out", "duration": 4, "seeds": 6, "trim": true},
+  {"name": "room_tone", "prompt": "very quiet soft room tone, gentle air, no events", "duration": 12, "seeds": 2, "min_range_db": 0}
+]

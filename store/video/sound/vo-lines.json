@@ -1,0 +1,13 @@
+{
+  "model": "eleven_v4",
+  "settings": {"stability": 0.5, "similarity_boost": 0.8},
+  "lines": [
+    {"id": "l1", "t": 0.3, "max": 2.6, "text": "Shopping from Seoul, New York, or Tokyo?"},
+    {"id": "l2", "t": 3.4, "max": 3.2, "text": "Price Peek shows it in your currency, right on the price."},
+    {"id": "l3", "t": 7.6, "max": 6.0, "text": "It reads prices the local way, too: Korean won, Japanese yen, European commas."},
+    {"id": "l4", "t": 13.8, "max": 5.0, "text": "Think in euros instead? Pick from eleven currencies in one click."},
+    {"id": "l5", "t": 19.8, "max": 3.6, "text": "Typing a budget? See what it's worth as you type."},
+    {"id": "l6", "t": 26.0, "max": 1.1, "text": "Price Peek."},
+    {"id": "l7", "t": 27.15, "max": 2.2, "text": "Any price, in your currency."}
+  ]
+}

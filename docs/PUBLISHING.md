@@ -92,7 +92,7 @@ Use `--window-size=440,280` for `#f5`.
 node store/video/record.js
 ```
 
-It steps the page in headless Chrome, averages 6 sub-frames per output frame for real motion blur and pipes them to ffmpeg; the result is silent. `--stills 2,10,16` writes single PNG frames instead, and `--audio file.mp3` muxes a finished soundtrack in. The voice-over script, music advice and the mix command are in `store/video/voiceover.md`.
+It steps the page in headless Chrome, averages 6 sub-frames per output frame for real motion blur and pipes them to ffmpeg. The soundtrack (AI music, sound effects, ElevenLabs voice-over) is built separately from `store/video/sound/` (cue sheet, voice lines, music plan) with the tools in `~/.promo-audio`, and muxed in with ffmpeg; see `store/video/sound-plan.md`. `--stills 2,10,16` writes single PNG frames instead, and `--audio file.mp3` muxes a finished soundtrack in. The voice-over script, music advice and the mix command are in `store/video/voiceover.md`.
 
 The store's video field takes a YouTube link only:
 
