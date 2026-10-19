@@ -36,6 +36,8 @@ In the dashboard: **Items** → **New item** → upload the ZIP. The item opens 
 | Store icon | `extension/icons/icon128.png` |
 | Screenshots | Upload `store/screenshot-1.png` … `screenshot-4.png` (1280×800), in that order. |
 | Small promo tile | `store/promo-tile.png` (440×280). |
+| Marquee promo tile | `store/marquee.png` (1400×560). |
+| Global promo video | A YouTube link to `store/video/price-peek-promo.mp4`, see *Promo video* below. |
 
 ### Privacy
 
@@ -81,3 +83,19 @@ The images in `store/` are drawn by `store/promo.html`. Serve the repo root (`py
 ```
 
 Use `--window-size=440,280` for `#f5`.
+
+## Promo video
+
+`store/video/price-peek-promo.mp4` (1920×1080, 60 fps, 30 s) is drawn by `store/video/promo-video.html` (open it in Chrome to watch it live; space pauses, click scrubs) and recorded with:
+
+```bash
+node store/video/record.js
+```
+
+It steps the page frame by frame in headless Chrome, pipes the frames to ffmpeg and adds a synthesized sound-effects track. `--stills 2,10,16` writes single PNG frames instead. The voice-over script and how to mix a voice in are in `store/video/voiceover.md`.
+
+The store's video field takes a YouTube link only:
+
+1. Upload the MP4 on YouTube (studio.youtube.com → **Create** → **Upload videos**).
+2. Title "Price Peek – any price, in your currency", visibility **Unlisted**, "No, it's not made for kids".
+3. Copy the video link and paste it into the store listing's **Global promo video** field.

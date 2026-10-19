@@ -1,0 +1,330 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Price Peek Promo Video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* A 30 s motion-graphics promo, drawn on a 1280×720 stage scaled to 1920×1080.
+   render(t) sets every element from the time alone, so record.js can step it frame by frame.
+   Open the page normally to watch it play in real time (space pauses, click scrubs). */
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #0b0c0f; overflow: hidden; }
+#stage { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; overflow: hidden; transform-origin: 0 0;
+  background: #eef1f6; color: #14161b; font-family: "Instrument Sans", "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+.h { position: absolute; margin: 0; font: 800 76px/0.98 "Bricolage Grotesque", sans-serif; letter-spacing: -.035em; }
+.sub { position: absolute; margin: 0; font: 500 25px/1.4 "Instrument Sans", sans-serif; color: #535a69; }
+.accent { color: #3355ff; }
+.mark { position: absolute; left: 80px; bottom: 56px; display: flex; align-items: center; gap: 12px; font: 700 24px "Bricolage Grotesque", sans-serif; letter-spacing: -.01em; }
+.mark i { display: inline-block; background: #14161b; color: #fff; font: 700 15px/1.75 "Segoe UI", sans-serif; font-style: normal; padding: 0 .55em; border-radius: 7px 7px 7px 1px; }
+
+/* the badge, as the extension draws it; it grows out of its sharp corner */
+.b { position: absolute; white-space: nowrap; background: #14161b; color: #fff; font: 600 19px/1.75 "Segoe UI", "Instrument Sans", sans-serif; padding: 0 .6em;
+  border-radius: 8px 8px 8px 2px; box-shadow: 0 6px 16px -6px rgba(10,12,16,.45); transform-origin: 0 100%; }
+
+.chip { position: absolute; background: #fff; border-radius: 22px; padding: 22px 30px 20px; box-shadow: 0 24px 48px -28px rgba(20,24,40,.35), 0 0 0 1px rgba(20,24,40,.05); }
+.chip .city { display: block; margin-top: 8px; font: 600 15px "Instrument Sans", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8a90a0; }
+.chip .p { position: relative; display: inline-block; margin-top: 10px; font: 700 44px/1.1 "Instrument Sans", sans-serif; letter-spacing: -.02em; }
+.chip .p .b { top: -30px; right: -34px; }
+
+.rows { position: absolute; display: grid; gap: 34px; }
+.row { display: grid; grid-template-columns: 420px 70px auto; align-items: center; }
+.row .w { font: 700 56px/1 "Instrument Sans", sans-serif; letter-spacing: -.02em; }
+.row .note { display: block; font: 500 15px "Instrument Sans", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #7d8494; margin-top: 10px; }
+.row .arrow { font: 500 36px "Instrument Sans", sans-serif; color: #5b6170; }
+.row .b { position: relative; display: inline-block; font-size: 28px; justify-self: start; }
+
+.base { position: absolute; display: inline-block; font: 700 72px/1 "Instrument Sans", sans-serif; letter-spacing: -.025em; }
+.base .b { top: -34px; right: -50px; font-size: 24px; }
+.pop { position: absolute; width: 400px; background: #fff; border-radius: 20px; box-shadow: 0 40px 80px -36px rgba(20,24,40,.45), 0 0 0 1px rgba(20,24,40,.06); font-family: "Instrument Sans", sans-serif; }
+.pop header { display: flex; align-items: center; gap: 14px; padding: 20px 22px; border-bottom: 1px solid #eceef2; }
+.pop header i { font: 700 15px/1.75 "Segoe UI", sans-serif; font-style: normal; background: #14161b; color: #fff; padding: 0 .55em; border-radius: 7px 7px 7px 1px; }
+.pop header b { font-size: 18px; } .pop header small { display: block; color: #8a90a0; font-size: 14px; }
+.pop .r { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 15px 22px; border-bottom: 1px solid #eceef2; font-size: 17px; }
+.pop .r:last-child { border-bottom: 0; }
+.pop .sel { border: 1px solid #dfe2e8; border-radius: 9px; padding: 6px 12px; font-size: 16px; font-weight: 600; background: #fff; }
+.pop .sel.open { border-color: #3355ff; box-shadow: 0 0 0 4px rgba(51,85,255,.15); }
+.menu { position: absolute; right: 22px; top: 52px; width: 236px; background: #fff; border-radius: 12px; padding: 6px; z-index: 2; transform-origin: 50% 0;
+  box-shadow: 0 24px 48px -20px rgba(20,24,40,.4), 0 0 0 1px rgba(20,24,40,.08); }
+.menu div { padding: 8px 10px; border-radius: 8px; font-size: 15px; font-weight: 500; }
+.menu div b { display: inline-block; width: 42px; font-weight: 700; }
+.menu div.hi { background: #3355ff; color: #fff; }
+.tg { width: 44px; height: 26px; border-radius: 13px; background: #14161b; position: relative; }
+.tg::after { content: ""; position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; border-radius: 50%; background: #fff; }
+.tg.off { background: #d5d8de; } .tg.off::after { right: auto; left: 4px; }
+#cursor { position: absolute; left: 0; top: 0; width: 26px; z-index: 5; filter: drop-shadow(0 4px 6px rgba(0,0,0,.25)); }
+
+.form { position: absolute; background: #fff; border-radius: 22px; padding: 34px 38px 40px; box-shadow: 0 40px 80px -40px rgba(20,24,40,.45), 0 0 0 1px rgba(20,24,40,.06); }
+.form .lab { font: 600 16px "Instrument Sans", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8a90a0; }
+.form .line { display: flex; align-items: center; gap: 18px; margin-top: 16px; font: 600 28px "Instrument Sans", sans-serif; color: #5b6170; }
+.inp { position: relative; width: 320px; height: 76px; border-radius: 14px; border: 2px solid #dfe2e8; font: 600 34px/72px "Instrument Sans", sans-serif; color: #14161b; padding: 0 20px; white-space: nowrap; }
+.inp.focus { border-color: #3355ff; box-shadow: 0 0 0 5px rgba(51,85,255,.15); }
+.inp .pre { color: #9aa0ad; margin-right: 6px; }
+.inp .caret { display: inline-block; width: 2px; height: 36px; background: #3355ff; vertical-align: -5px; margin-left: 2px; }
+.inp .b { top: -32px; right: -22px; font-size: 22px; }
+
+#ink { position: absolute; left: 640px; top: 360px; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #14161b; }
+.end { color: #f3f4f7; }
+.logo { position: absolute; left: 50%; top: 168px; font: 700 64px/1.75 "Segoe UI", sans-serif; padding: 0 .42em; border-radius: 30px 30px 30px 5px; background: #fff; color: #14161b; transform-origin: 0 100%; }
+.name { position: absolute; left: 0; right: 0; top: 340px; text-align: center; margin: 0; font: 800 112px/1 "Bricolage Grotesque", sans-serif; letter-spacing: -.04em; }
+.tag { position: absolute; left: 0; right: 0; top: 478px; text-align: center; margin: 0; font: 500 34px "Instrument Sans", sans-serif; color: #a5abb8; }
+.tag .accent { color: #8ea0ff; }
+.end .b { background: #262a33; color: #c9cdd6; box-shadow: none; }
+</style>
+
+<div id="stage">
+  <!-- 1 · prices from everywhere -->
+  <div class="scene" id="s1">
+    <h2 class="h" id="q1" style="left:80px;top:180px;width:470px">Shopping <span class="accent">abroad?</span></h2>
+    <h2 class="h" id="q2" style="left:80px;top:140px;width:500px">Every price, in <span class="accent">your</span> currency.</h2>
+    <p class="sub" id="q2s" style="left:80px;top:330px;width:430px">Price Peek finds prices on any site and shows them in kroner, right on the price.</p>
+  </div>
+  <!-- 2 · local formats -->
+  <div class="scene" id="s2">
+    <h2 class="h" style="left:80px;top:108px;width:1120px">Reads prices the <span class="accent">local</span> way.</h2>
+    <div class="rows" style="left:80px;top:268px" id="rows"></div>
+  </div>
+  <!-- 3 · pick a currency -->
+  <div class="scene" id="s3">
+    <h2 class="h" style="left:80px;top:108px;width:560px">Your currency, your call.</h2>
+    <div class="base" id="yen" style="left:80px;top:350px">¥42,800<span class="b" id="yenB"></span></div>
+    <div class="pop" id="pop" style="left:780px;top:96px">
+      <header><i>kr.</i><div><b id="rateLine"></b><small>Daily ECB rate</small></div></header>
+      <div class="r">Convert to <span class="sel" id="sel"></span>
+        <div class="menu" id="menu"></div></div>
+      <div class="r">On <span class="tg"></span></div>
+      <div class="r">On this site <span class="tg"></span></div>
+      <div class="r">Show all prices <span class="tg off"></span></div>
+      <div class="r">Area &amp; weight <span class="tg"></span></div>
+    </div>
+    <svg id="cursor" viewBox="0 0 26 36"><path d="M2 2v28l7.5-7 5 11 5-2.3-5-10.7H25z" fill="#14161b" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/></svg>
+  </div>
+  <!-- 4 · typed numbers -->
+  <div class="scene" id="s4">
+    <h2 class="h" style="left:80px;top:150px;width:500px">Even the numbers you type.</h2>
+    <p class="sub" style="left:80px;top:400px;width:420px">Price filters and budgets get a badge as you type.</p>
+    <div class="form" style="left:620px;top:130px;width:580px">
+      <div class="lab">Price range · min</div>
+      <div class="line"><div class="inp" id="in1"></div>원</div>
+      <div class="lab" style="margin-top:44px">Budget</div>
+      <div class="line"><div class="inp" id="in2"></div></div>
+    </div>
+  </div>
+  <div class="mark" id="mark"><i>kr.</i>Price Peek</div>
+  <!-- 5 · end card -->
+  <div id="ink"></div>
+  <div class="scene end" id="s5">
+    <div id="floats"></div>
+    <div class="logo" id="logo">kr.</div>
+    <h2 class="name" id="name">Price Peek</h2>
+    <p class="tag" id="tag">Any price, in <span class="accent">your</span> currency.</p>
+  </div>
+</div>
+
+<script>
+// Same EUR-based rates and Danish formatting as store/promo.html and the extension.
+const R = { EUR: 1, DKK: 7.4748, KRW: 1499.01, USD: 1.1253, GBP: 0.84385, JPY: 177.82, CNY: 7.524, CHF: 0.9272, THB: 37.602 };
+const dk = (n, d = 0) => n.toLocaleString("da-DK", { minimumFractionDigits: d, maximumFractionDigits: d });
+const FMT = { DKK: { suf: " kr." }, EUR: { pre: "€" }, USD: { pre: "$" }, GBP: { pre: "£" } };
+function money(v, c = "DKK") {
+  const f = FMT[c]; let num, sc = "";
+  if (v >= 1e9) { num = dk(v / 1e9, 1); sc = " mia."; } else if (v >= 1e8) { num = dk(v / 1e6, 0); sc = " mio."; }
+  else if (v >= 1e6) { num = dk(v / 1e6, 1); sc = " mio."; } else if (v >= 10) num = dk(Math.round(v)); else num = dk(v, 2);
+  return f.pre ? `${f.pre}${num}${sc}` : `${num}${sc}${f.suf}`;
+}
+const conv = (v, from, to = "DKK") => money(v / R[from] * R[to], to);
+
+const DURATION = 30;
+const $ = id => document.getElementById(id);
+
+// ---------- timing ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, t0, d) => clamp((t - t0) / d);
+const lerp = (a, b, p) => a + (b - a) * p;
+const out3 = p => 1 - Math.pow(1 - p, 3);
+const inOut = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+const back = p => { const c = 1.9; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+
+// sound cues for record.js, collected while building the timeline
+const SFX = [];
+const cue = (t, kind) => SFX.push({ t: +t.toFixed(3), kind });
+
+function set(el, o, x = 0, y = 0, s = 1) {
+  el.style.opacity = o;
+  el.style.visibility = o <= 0.001 ? "hidden" : "visible";
+  el.style.transform = `translate(${x}px,${y}px) scale(${s})`;
+}
+// rise and fade in
+const rise = (el, t, t0, d = .6, dy = 26) => { const p = prog(t, t0, d), e = out3(p); set(el, p, 0, (1 - e) * dy); };
+// pop in with overshoot (chips, badges)
+const pop = (el, t, t0, d = .42, s0 = .35) => { const p = prog(t, t0, d); set(el, clamp(p * 2.5), 0, 0, lerp(s0, 1, back(p))); };
+// a short bump when a badge's value changes
+const bump = (t, t0) => { const p = prog(t, t0, .32); return p <= 0 || p >= 1 ? 1 : 1 + .14 * Math.sin(p * Math.PI) * (1 - p); };
+// scene in/out window: fades and lifts away during the last 0.5 s
+function scene(el, t, t0, t1) {
+  if (t < t0 || t >= t1) return set(el, 0);
+  const e = inOut(prog(t, t1 - .5, .5));
+  set(el, 1 - e, 0, -40 * e);
+}
+
+// ---------- scene 1: chips + badges ----------
+const CHIPS = [
+  ["Seoul", "₩1,500,000", 1500000, "KRW", 600, 62],
+  ["New York", "$249", 249, "USD", 1040, 116],
+  ["Berlin", "19,99 €", 19.99, "EUR", 640, 258],
+  ["Tokyo", "¥42,800", 42800, "JPY", 960, 314],
+  ["London", "£219", 219, "GBP", 660, 452],
+  ["Bangkok", "฿8,490", 8490, "THB", 1000, 500],
+];
+$("s1").insertAdjacentHTML("beforeend", CHIPS.map(([city, txt, v, c, x, y], i) =>
+  `<div class="chip" id="c${i}" style="left:${x}px;top:${y}px"><span class="p">${txt}<span class="b" id="cb${i}">${conv(v, c)}</span></span><span class="city">${city}</span></div>`).join(""));
+const T1 = { chips: .35, chipGap: .32, badges: 3.1, badgeGap: .3 };
+CHIPS.forEach((_, i) => { cue(T1.chips + i * T1.chipGap, "soft"); cue(T1.badges + i * T1.badgeGap, "pop"); });
+
+// ---------- scene 2: local formats ----------
+const ROWS = [
+  ["3억 5,000만원", 350000000, "KRW", "Korean 억 and 만"],
+  ["3万円", 30000, "JPY", "Japanese 万"],
+  ["19,99 €", 19.99, "EUR", "Decimal comma"],
+];
+$("rows").innerHTML = ROWS.map(([w, v, c, note], i) =>
+  `<div class="row" id="r${i}"><div class="w">${w}<span class="note">${note}</span></div><span class="arrow" id="ra${i}">→</span><span class="b" id="rb${i}">${conv(v, c)}</span></div>`).join("");
+const T2 = { start: 7.2, rows: 7.75, gap: 1.35 };
+ROWS.forEach((_, i) => { cue(T2.rows + i * T2.gap, "soft"); cue(T2.rows + i * T2.gap + .55, "pop"); });
+
+// ---------- scene 3: pick a currency ----------
+const OPTS = [["DKK", "Danish krone"], ["EUR", "Euro"], ["USD", "US dollar"], ["GBP", "British pound"], ["SEK", "Swedish krona"], ["NOK", "Norwegian krone"]];
+$("menu").innerHTML = OPTS.map(([c, n]) => `<div><b>${c}</b>${n}</div>`).join("");
+const T3 = { start: 13, pop: 13.75, yen: 13.5, cursorIn: 14.3, atSel: 15.0, open: 15.15, hoverEur: 15.95, pick: 16.45 };
+cue(T3.yen + .45, "pop"); cue(T3.open, "click"); cue(T3.pick, "click"); cue(T3.pick + .05, "pop");
+let cursorPath = null; // filled after layout: [[t, x, y], ...]
+
+// ---------- scene 4: typing ----------
+const TYPE1 = { t0: 20.35, gap: .24, text: "500000", cur: "KRW" };
+const TYPE2 = { t0: 22.55, gap: .26, text: "1200", cur: "USD" };
+for (const k of [TYPE1, TYPE2]) for (let i = 0; i < k.text.length; i++) cue(k.t0 + i * k.gap, "key");
+const T4 = { start: 19.6, end: 26.1 };
+
+// ---------- scene 5: end card ----------
+const T5 = { ink: 25.25, logo: 25.85, name: 26.15, tag: 26.55 };
+const FLOATS = [["7.480 kr.", 110, 96], ["€241", 1060, 80], ["1.654 kr.", 1050, 610], ["$271", 150, 600], ["1,7 mio. kr.", 1010, 300], ["149 kr.", 120, 330]];
+$("floats").innerHTML = FLOATS.map(([txt, x, y], i) => `<span class="b" id="f${i}" style="left:${x}px;top:${y}px">${txt}</span>`).join("");
+cue(T5.ink, "whoosh"); cue(T5.logo + .05, "chime");
+
+function typed(k, t) {
+  const n = clamp(Math.floor((t - k.t0) / k.gap) + 1, 0, k.text.length);
+  return { s: k.text.slice(0, n), n, last: k.t0 + (n - 1) * k.gap };
+}
+const caretOn = t => (t * 1.9) % 1 < .55;
+
+// ---------- the frame ----------
+function render(t) {
+  // 1
+  scene($("s1"), t, 0, 7.2);
+  { const p = prog(t, .2, .6), e = out3(p), x = inOut(prog(t, 2.55, .4));
+    set($("q1"), p * (1 - x), 0, (1 - e) * 26 - 30 * x); }
+  rise($("q2"), t, 2.95, .65);
+  rise($("q2s"), t, 3.35, .65);
+  CHIPS.forEach((_, i) => {
+    const t0 = T1.chips + i * T1.chipGap, p = prog(t, t0, .55);
+    set($("c" + i), clamp(p * 2), 0, (1 - out3(p)) * 40, lerp(.86, 1, back(p)));
+    pop($("cb" + i), t, T1.badges + i * T1.badgeGap);
+  });
+  set($("mark"), t < T5.ink + .75 ? out3(prog(t, .2, .6)) : 0);
+
+  // 2
+  scene($("s2"), t, T2.start, 13);
+  ROWS.forEach((_, i) => {
+    const t0 = T2.rows + i * T2.gap, p = prog(t, t0, .55), e = out3(p);
+    set($("r" + i), p, (1 - e) * -30, 0);
+    const a = prog(t, t0 + .3, .35); set($("ra" + i), a, (1 - out3(a)) * -14, 0);
+    pop($("rb" + i), t, t0 + .55);
+  });
+
+  // 3
+  scene($("s3"), t, T3.start, 19.6);
+  rise($("yen"), t, T3.yen - .05, .6);
+  { const p = prog(t, T3.pop, .65), e = out3(p); set($("pop"), p, (1 - e) * 60, 0); }
+  const picked = t >= T3.pick ? "EUR" : "DKK";
+  $("sel").textContent = `${picked} · ${picked === "EUR" ? "Euro" : "Danish krone"} ▾`;
+  $("rateLine").textContent = `1.000 ₩ = ${conv(1000, "KRW", picked)}`;
+  const yb = $("yenB"); yb.textContent = conv(42800, "JPY", picked);
+  if (t < T3.pick) pop(yb, t, T3.yen + .45); else set(yb, 1, 0, 0, bump(t, T3.pick + .02) * 1.0);
+  { const open = t >= T3.open && t < T3.pick + .12;
+    $("sel").classList.toggle("open", open);
+    const m = $("menu");
+    if (t >= T3.open && t < T3.pick + .25) {
+      const pin = out3(prog(t, T3.open, .22)), pout = prog(t, T3.pick + .05, .2);
+      set(m, pin * (1 - pout), 0, (1 - pin) * -8, lerp(.96, 1, pin));
+    } else set(m, 0);
+    [...m.children].forEach((d, i) => d.classList.toggle("hi", (t >= T3.hoverEur ? 1 : t >= T3.open ? 0 : -1) === i));
+  }
+  if (cursorPath) {
+    const c = $("cursor");
+    let x = cursorPath[0][1], y = cursorPath[0][2];
+    for (let i = 1; i < cursorPath.length; i++) {
+      const [ta, xa, ya] = cursorPath[i - 1], [tb, xb, yb2] = cursorPath[i];
+      if (t >= ta) { const e = inOut(prog(t, ta, tb - ta)); x = lerp(xa, xb, e); y = lerp(ya, yb2, e); }
+    }
+    const press = (t > T3.open - .08 && t < T3.open + .06) || (t > T3.pick - .08 && t < T3.pick + .06);
+    set(c, prog(t, T3.cursorIn, .3) * (1 - prog(t, 18.2, .4)), x, y, press ? .86 : 1);
+  }
+
+  // 4
+  scene($("s4"), t, T4.start, T4.end);
+  for (const [el, k, other] of [[$("in1"), TYPE1, null], [$("in2"), TYPE2, TYPE1]]) {
+    const focus = k === TYPE1 ? t >= TYPE1.t0 - .4 && t < TYPE2.t0 - .4 : t >= TYPE2.t0 - .4;
+    const { s, n, last } = typed(k, t);
+    el.classList.toggle("focus", focus);
+    const shown = k.cur === "USD" ? s.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : s;
+    el.innerHTML = (k.cur === "USD" ? `<span class="pre">$</span>` : "") + shown + (focus && (caretOn(t) || t - last < .5) ? `<span class="caret"></span>` : "")
+      + (n ? `<span class="b">${conv(+s, k.cur)}</span>` : "");
+    if (n) { const b = el.querySelector(".b"); n === 1 ? pop(b, t, k.t0, .32, .5) : set(b, 1, 0, 0, bump(t, last)); }
+  }
+
+  // 5
+  { const p = inOut(prog(t, T5.ink, .75)); const ink = $("ink");
+    ink.style.transform = `scale(${p * 330})`; ink.style.visibility = p > 0 ? "visible" : "hidden"; }
+  $("s5").style.visibility = t >= T5.ink + .5 ? "visible" : "hidden";
+  { const lg = $("logo"), p = prog(t, T5.logo, .55); lg.style.marginLeft = -lg.offsetWidth / 2 + "px";
+    set(lg, clamp(p * 2.5), 0, 0, lerp(.3, 1, back(p))); }
+  rise($("name"), t, T5.name, .7, 30);
+  rise($("tag"), t, T5.tag, .7, 20);
+  FLOATS.forEach((_, i) => {
+    const p = prog(t, T5.tag + .2 + i * .12, .8), drift = Math.sin(t * .9 + i * 1.7) * 6;
+    set($("f" + i), out3(p) * .9, 0, drift - (1 - out3(p)) * 12, 1);
+  });
+}
+
+// Cursor waypoints come from the real layout, measured with the menu open.
+function measure() {
+  const st = $("stage").getBoundingClientRect(), k = st.width / 1280;
+  render(15.6);
+  const at = el => { const r = el.getBoundingClientRect(); return [(r.left - st.left) / k, (r.top - st.top) / k, r.width / k, r.height / k]; };
+  const [sx, sy, sw, sh] = at($("sel")), [ex, ey, , eh] = at($("menu").children[1]);
+  const selPt = [sx + sw * .55, sy + sh * .6], eurPt = [ex + 70, ey + eh * .55];
+  cursorPath = [[T3.cursorIn, 1240, 690], [T3.atSel, ...selPt], [T3.hoverEur - .45, ...selPt], [T3.hoverEur, ...eurPt], [T3.pick + .3, ...eurPt], [18.4, eurPt[0] + 90, eurPt[1] + 150]];
+}
+
+function fit() {
+  const k = Math.min(innerWidth / 1280, innerHeight / 720);
+  const s = $("stage"); s.style.transform = `scale(${k})`;
+  s.style.left = (innerWidth - 1280 * k) / 2 + "px"; s.style.top = (innerHeight - 720 * k) / 2 + "px";
+}
+
+window.SFX = SFX; window.DURATION = DURATION; window.render = render;
+window.ready = (async () => {
+  fit(); await document.fonts.ready; measure(); render(0); return true;
+})();
+
+// live preview when not recording
+if (!location.search.includes("record")) {
+  addEventListener("resize", () => { fit(); measure(); });
+  let start = performance.now(), paused = false, pausedAt = 0;
+  const now = () => paused ? pausedAt : ((performance.now() - start) / 1000) % DURATION;
+  addEventListener("keydown", e => { if (e.code === "Space") { if (paused) start = performance.now() - pausedAt * 1000; else pausedAt = now(); paused = !paused; } });
+  addEventListener("click", e => { const t = e.clientX / innerWidth * DURATION; start = performance.now() - t * 1000; pausedAt = t; });
+  window.ready.then(() => { const loop = () => { render(now()); requestAnimationFrame(loop); }; loop(); });
+}
+</script>
