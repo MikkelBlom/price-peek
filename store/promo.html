@@ -1,0 +1,234 @@
+<meta charset="utf-8">
+<title>Price Peek Store Shots</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono&display=swap">
+<style>
+/* Layout: a column of store-size promo frames (1280×800 and the 440×280 tile), drawn in HTML so they stay sharp, each scaled to the page width. */
+:root {
+  --bg: #e9ecf1; --surface: #ffffff; --fg: #16181d; --muted: #5d6270; --line: #d6dae2; --accent: #3355ff;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0f1115; --surface: #191c22; --fg: #eceef3; --muted: #9aa0ad; --line: #2b3039; --accent: #7d93ff; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0f1115; --surface: #191c22; --fg: #eceef3; --muted: #9aa0ad; --line: #2b3039; --accent: #7d93ff; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; }
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 30px; }
+h1 { font: 800 clamp(26px, 3.4vw, 38px)/1.05 var(--display); margin: 0; }
+.lede { margin: 6px 0 0; color: var(--muted); max-width: 66ch; }
+.item { display: grid; gap: 10px; }
+.cap { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+.cap h2 { margin: 0; font: 600 18px/1.25 var(--display); }
+.cap .n { font: 13px var(--mono); color: var(--muted); }
+.cap .size { font: 12px var(--mono); color: var(--muted); margin-left: auto; }
+.fit { position: relative; width: 100%; overflow: hidden; border-radius: 10px; box-shadow: 0 0 0 1px var(--line); }
+.fit.tile { max-width: 440px; }
+.frame { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+
+/* ================= promo frames: fixed palette, these are images ================= */
+.s { position: relative; width: 1280px; height: 800px; overflow: hidden; font-family: "Instrument Sans", "Segoe UI", sans-serif; color: #14161b; background: #eef1f6; font-variant-numeric: tabular-nums; }
+.s.dark { background: #14161b; color: #f3f4f7; }
+.h { position: absolute; margin: 0; font: 800 76px/0.98 "Bricolage Grotesque", sans-serif; letter-spacing: -.035em; text-wrap: balance; }
+.sub { position: absolute; margin: 0; font: 500 25px/1.4 "Instrument Sans", sans-serif; color: #535a69; }
+.dark .sub { color: #a5abb8; }
+.mark { position: absolute; left: 80px; bottom: 64px; display: flex; align-items: center; gap: 12px; font: 700 24px "Bricolage Grotesque", sans-serif; letter-spacing: -.01em; }
+.mark i { display: inline-block; background: #14161b; color: #fff; font: 700 15px/1.75 "Segoe UI", sans-serif; font-style: normal; padding: 0 .55em; border-radius: 7px 7px 7px 1px; }
+.dark .mark i { background: #fff; color: #14161b; }
+.accent { color: #3355ff; }
+.dark .accent { color: #8ea0ff; }
+
+/* the badge, as the extension draws it */
+.b { position: absolute; white-space: nowrap; background: #14161b; color: #fff; font: 600 19px/1.75 "Segoe UI", "Instrument Sans", sans-serif; padding: 0 .6em; border-radius: 8px 8px 8px 2px; box-shadow: 0 6px 16px -6px rgba(10,12,16,.45); }
+.dark .b.light { background: #fff; color: #14161b; }
+
+/* price chips */
+.chip { position: absolute; background: #fff; border-radius: 22px; padding: 22px 30px 20px; box-shadow: 0 24px 48px -28px rgba(20,24,40,.35), 0 0 0 1px rgba(20,24,40,.05); }
+.chip .city { display: block; margin-top: 8px; font: 600 15px "Instrument Sans", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8a90a0; }
+.chip .p { position: relative; display: inline-block; margin-top: 10px; font: 700 44px/1.1 "Instrument Sans", sans-serif; letter-spacing: -.02em; }
+.chip .p .b { top: -30px; right: -34px; }
+
+/* browser mock */
+.win { position: absolute; background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 40px 80px -40px rgba(20,24,40,.45), 0 0 0 1px rgba(20,24,40,.06); }
+.bar { height: 48px; background: #f3f4f7; display: flex; align-items: center; gap: 8px; padding: 0 18px; border-bottom: 1px solid #e4e6ec; }
+.bar span { width: 12px; height: 12px; border-radius: 50%; background: #d9dce3; }
+.bar .url { width: auto; height: 28px; border-radius: 8px; background: #fff; flex: 1; margin-left: 14px; font: 500 14px/28px "Instrument Sans", sans-serif; color: #8a90a0; padding: 0 12px; box-shadow: 0 0 0 1px #e4e6ec; }
+.prod { display: grid; grid-template-columns: 330px 1fr; gap: 36px; padding: 34px; }
+.pic { height: 330px; border-radius: 16px; background: linear-gradient(160deg, #e6ebff, #f4f6fb); display: grid; place-items: center; }
+.pname { font: 700 30px/1.15 "Instrument Sans", sans-serif; letter-spacing: -.01em; margin-top: 6px; }
+.meta { font: 500 16px "Instrument Sans", sans-serif; color: #8a90a0; margin-top: 10px; }
+.stars { color: #f2a91c; letter-spacing: 2px; }
+.was { font: 500 20px "Instrument Sans", sans-serif; color: #9aa0ad; text-decoration: line-through; margin-top: 30px; }
+.price { position: relative; display: inline-block; font: 700 54px/1 "Instrument Sans", sans-serif; letter-spacing: -.02em; margin-top: 6px; }
+.price .b { top: -32px; right: -40px; font-size: 21px; }
+.btn { margin-top: 34px; width: 320px; height: 58px; border-radius: 14px; background: #14161b; color: #fff; font: 600 19px/58px "Instrument Sans", sans-serif; text-align: center; }
+
+/* format rows */
+.rows { position: absolute; display: grid; gap: 22px; }
+.row { display: grid; grid-template-columns: 440px 56px auto; align-items: center; }
+.row .w { font: 700 52px/1 "Instrument Sans", sans-serif; letter-spacing: -.02em; }
+.row .arrow { font: 500 34px "Instrument Sans", sans-serif; color: #5b6170; }
+.row .b { position: static; display: inline-block; font-size: 26px; justify-self: start; }
+.row .note { display: block; font: 500 15px "Instrument Sans", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #7d8494; margin-top: 8px; }
+
+/* target currency fan */
+.fan { position: absolute; }
+.fan .base { position: relative; display: inline-block; font: 700 64px/1 "Instrument Sans", sans-serif; letter-spacing: -.025em; }
+.fan .opts { display: grid; grid-template-columns: repeat(2, auto); gap: 18px 18px; margin-top: 40px; justify-content: start; }
+.fan .opts .b { position: static; font-size: 24px; display: inline-flex; gap: 10px; align-items: center; }
+.fan .opts .b small { font: 600 13px "Instrument Sans", sans-serif; letter-spacing: .08em; opacity: .6; }
+.fan .opts .b.on { background: #3355ff; }
+
+/* popup mock */
+.pop { position: absolute; width: 380px; background: #fff; border-radius: 20px; box-shadow: 0 40px 80px -36px rgba(20,24,40,.45), 0 0 0 1px rgba(20,24,40,.06); overflow: hidden; font-family: "Instrument Sans", sans-serif; }
+.pop header { display: flex; align-items: center; gap: 14px; padding: 20px 22px; border-bottom: 1px solid #eceef2; }
+.pop header i { font: 700 15px/1.75 "Segoe UI", sans-serif; font-style: normal; background: #14161b; color: #fff; padding: 0 .55em; border-radius: 7px 7px 7px 1px; }
+.pop header b { font-size: 18px; } .pop header small { display: block; color: #8a90a0; font-size: 14px; }
+.pop .r { display: flex; align-items: center; justify-content: space-between; padding: 15px 22px; border-bottom: 1px solid #eceef2; font-size: 17px; }
+.pop .sel { border: 1px solid #dfe2e8; border-radius: 9px; padding: 6px 12px; font-size: 16px; font-weight: 600; }
+.tg { width: 44px; height: 26px; border-radius: 13px; background: #14161b; position: relative; }
+.tg::after { content: ""; position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; border-radius: 50%; background: #fff; }
+.tg.off { background: #d5d8de; } .tg.off::after { right: auto; left: 4px; }
+.pop .chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 16px 22px 20px; }
+.pop .chips span { font: 600 14px "Instrument Sans", sans-serif; padding: 6px 10px; border-radius: 7px; background: #14161b; color: #fff; }
+
+/* field mock */
+.form { position: absolute; background: #fff; border-radius: 22px; padding: 34px 38px 38px; box-shadow: 0 40px 80px -40px rgba(20,24,40,.45), 0 0 0 1px rgba(20,24,40,.06); }
+.form .lab { font: 600 16px "Instrument Sans", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8a90a0; }
+.form .line { display: flex; align-items: center; gap: 18px; margin-top: 18px; font: 600 26px "Instrument Sans", sans-serif; color: #5b6170; }
+.inp { position: relative; width: 300px; height: 74px; border-radius: 14px; border: 2px solid #dfe2e8; font: 600 32px/70px "Instrument Sans", sans-serif; color: #14161b; padding: 0 20px; }
+.inp.focus { border-color: #3355ff; box-shadow: 0 0 0 5px rgba(51,85,255,.15); }
+.inp .caret { display: inline-block; width: 2px; height: 34px; background: #3355ff; vertical-align: -5px; margin-left: 2px; }
+.inp .b { top: -32px; right: -18px; font-size: 21px; }
+
+/* tile */
+.t { position: relative; width: 440px; height: 280px; background: #14161b; color: #fff; overflow: hidden; font-family: "Instrument Sans", sans-serif; }
+.t .nm { position: absolute; left: 34px; top: 92px; font: 800 52px/1 "Bricolage Grotesque", sans-serif; letter-spacing: -.035em; }
+.t .tl { position: absolute; left: 36px; top: 156px; font: 500 18px "Instrument Sans", sans-serif; color: #a5abb8; }
+.t .px { position: absolute; left: 36px; top: 34px; font: 700 22px "Instrument Sans", sans-serif; color: #6f7686; }
+.t .px .b { position: relative; display: inline-block; margin-left: 10px; background: #fff; color: #14161b; font-size: 15px; top: -10px; }
+.t .stack { position: absolute; right: 30px; bottom: 30px; display: grid; gap: 9px; justify-items: end; }
+.t .stack span { font: 600 15px "Instrument Sans", sans-serif; color: #c9cdd6; background: #22252d; padding: 6px 12px; border-radius: 9px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Price Peek promo shots</h1>
+    <p class="lede">The store's screenshot slots take any 1280×800 image, so these are designed promo frames instead of browser captures: drawn sharp, and showing many currencies, not only won. Every number is computed from the same rates and formatting the extension uses.</p>
+  </header>
+  <div id="list" style="display:grid;gap:30px"></div>
+</div>
+
+<script>
+// Same EUR-based rates and Danish formatting as the extension.
+const R = { EUR: 1, DKK: 7.4748, KRW: 1499.01, USD: 1.1253, GBP: 0.84385, JPY: 177.82, CNY: 7.524, CHF: 0.9272, THB: 37.602 };
+const dk = (n, d = 0) => n.toLocaleString("da-DK", { minimumFractionDigits: d, maximumFractionDigits: d });
+const FMT = { DKK: { suf: " kr." }, EUR: { pre: "€" }, USD: { pre: "$" }, GBP: { pre: "£" } };
+function money(v, c = "DKK") {
+  const f = FMT[c]; let num, sc = "";
+  if (v >= 1e9) { num = dk(v / 1e9, 1); sc = " mia."; } else if (v >= 1e8) { num = dk(v / 1e6, 0); sc = " mio."; }
+  else if (v >= 1e6) { num = dk(v / 1e6, 1); sc = " mio."; } else if (v >= 10) num = dk(Math.round(v)); else num = dk(v, 2);
+  return f.pre ? `${f.pre}${num}${sc}` : `${num}${sc}${f.suf}`;
+}
+const conv = (v, from, to = "DKK") => money(v / R[from] * R[to], to);
+const badge = (v, from, cls = "", to) => `<span class="b ${cls}">${conv(v, from, to)}</span>`;
+const mark = `<div class="mark"><i>kr.</i>Price Peek</div>`;
+
+const headphones = `<svg width="200" height="200" viewBox="0 0 200 200" fill="none" stroke="#14161b" stroke-width="9" stroke-linecap="round" aria-hidden="true">
+  <path d="M40 120V100a60 60 0 0 1 120 0v20"/><rect x="28" y="112" width="34" height="56" rx="14" fill="#3355ff" stroke="none"/><rect x="138" y="112" width="34" height="56" rx="14" fill="#3355ff" stroke="none"/></svg>`;
+
+const chips = [
+  ["Seoul", "₩1,500,000", 1500000, "KRW", 560, 100],
+  ["New York", "$249", 249, "USD", 1030, 160],
+  ["Berlin", "19,99 €", 19.99, "EUR", 600, 330],
+  ["Tokyo", "¥42,800", 42800, "JPY", 940, 390],
+  ["London", "£219", 219, "GBP", 640, 560],
+  ["Bangkok", "฿8,490", 8490, "THB", 990, 610],
+];
+
+const FRAMES = [
+  { title: "Hero: prices from everywhere", size: [1280, 800], html: `<div class="s">
+      <h3 class="h" style="left:80px;top:150px;width:520px">Every price, in <span class="accent">your</span> currency.</h3>
+      <p class="sub" style="left:80px;top:420px;width:440px">Price Peek finds prices on any site and shows them in kroner, right on the price.</p>
+      ${chips.map(([city, txt, v, c, x, y]) => `<div class="chip" style="left:${x}px;top:${y}px"><span class="p">${txt}${badge(v, c)}</span><span class="city">${city}</span></div>`).join("")}
+      ${mark}</div>` },
+  { title: "On a real shop page", size: [1280, 800], html: `<div class="s">
+      <h3 class="h" style="left:80px;top:170px;width:440px">Shop any store. Know the real price.</h3>
+      <p class="sub" style="left:80px;top:430px;width:400px">The badge sits on the corner of the price. Nothing on the page changes.</p>
+      <div class="win" style="left:560px;top:110px;width:660px">
+        <div class="bar"><span></span><span></span><span></span><div class="url">store.example.com/headphones</div></div>
+        <div class="prod" style="grid-template-columns:250px 1fr;gap:30px">
+          <div class="pic" style="height:300px">${headphones}</div>
+          <div><div class="meta" style="margin:0">AUDIO</div><div class="pname">Studio Wireless Headphones</div>
+            <div class="meta"><span class="stars">★★★★★</span> 2,481 reviews</div>
+            <div class="was">$299.00</div><div class="price">$249.00${badge(249, "USD")}</div>
+            <div class="btn" style="width:100%">Add to cart</div></div>
+        </div>
+      </div>${mark}</div>` },
+  { title: "Choose your currency", size: [1280, 800], html: `<div class="s">
+      <h3 class="h" style="left:80px;top:120px;width:560px">Your currency, your call.</h3>
+      <div class="fan" style="left:80px;top:360px">
+        <span class="base">¥42,800</span>
+        <div class="opts">
+          <span class="b on"><small>DKK</small>${conv(42800, "JPY", "DKK")}</span>
+          <span class="b"><small>EUR</small>${conv(42800, "JPY", "EUR")}</span>
+          <span class="b"><small>USD</small>${conv(42800, "JPY", "USD")}</span>
+          <span class="b"><small>GBP</small>${conv(42800, "JPY", "GBP")}</span>
+        </div>
+      </div>
+      <div class="pop" style="left:800px;top:120px">
+        <header><i>kr.</i><div><b>1.000 ₩ = ${conv(1000, "KRW")}</b><small>Daily ECB rate</small></div></header>
+        <div class="r">Convert to <span class="sel">DKK · Danish krone ▾</span></div>
+        <div class="r">On <span class="tg"></span></div>
+        <div class="r">On this site <span class="tg"></span></div>
+        <div class="r">Show all prices <span class="tg off"></span></div>
+        <div class="r">Area &amp; weight <span class="tg"></span></div>
+        <div class="chips">${["KRW", "USD", "EUR", "GBP", "JPY", "CNY", "SEK", "NOK", "CHF", "THB"].map(c => `<span>${c}</span>`).join("")}</div>
+      </div>${mark}</div>` },
+  { title: "Typed prices too", size: [1280, 800], html: `<div class="s">
+      <h3 class="h" style="left:80px;top:150px;width:520px">Even the numbers you type.</h3>
+      <p class="sub" style="left:80px;top:400px;width:440px">Set a price filter or a budget and see what it means in kroner as you type.</p>
+      <div class="form" style="left:640px;top:170px;width:560px">
+        <div class="lab">Price range</div>
+        <div class="line"><div class="inp">500000${badge(500000, "KRW")}</div>원</div>
+        <div class="line" style="margin-top:44px"><div class="inp focus">3억<span class="caret"></span>${badge(300000000, "KRW")}</div>원</div>
+        <div class="lab" style="margin-top:40px">Budget</div>
+        <div class="line"><div class="inp">$1,200${badge(1200, "USD")}</div></div>
+      </div>${mark}</div>` },
+  { title: "Small promo tile", size: [440, 280], tile: true, html: `<div class="t">
+      <div class="px">€19,99<span class="b">${conv(19.99, "EUR")}</span></div>
+      <div class="nm">Price Peek</div>
+      <div class="tl">Any price, in your currency.</div>
+      <div class="stack"><span>₩ won</span><span>$ dollar</span><span>¥ yen</span></div>
+    </div>` },
+];
+
+// "#f1"…"#f5" renders one frame alone at full size, for exporting PNGs.
+const solo = location.hash.match(/^#f(\d)$/);
+if (solo) {
+  const f = FRAMES[solo[1] - 1];
+  document.body.style.cssText = "margin:0;padding:0;background:#fff";
+  document.body.innerHTML = f.html;
+  throw new Error("solo frame rendered");
+}
+document.getElementById("list").innerHTML = FRAMES.map((f, i) => `
+  <section class="item">
+    <div class="cap"><span class="n">${f.tile ? "+" : i + 1}</span><h2>${f.title}</h2><span class="size">${f.size[0]} × ${f.size[1]}</span></div>
+    <div class="fit${f.tile ? " tile" : ""}" data-w="${f.size[0]}" data-h="${f.size[1]}"><div class="frame">${f.html}</div></div>
+  </section>`).join("");
+
+function fitAll() {
+  document.querySelectorAll(".fit").forEach(box => {
+    const w = +box.dataset.w, h = +box.dataset.h, s = box.clientWidth / w;
+    box.style.height = h * s + "px";
+    box.firstElementChild.style.transform = `scale(${s})`;
+  });
+}
+addEventListener("resize", fitAll);
+fitAll();
+document.fonts && document.fonts.ready.then(fitAll);
+</script>

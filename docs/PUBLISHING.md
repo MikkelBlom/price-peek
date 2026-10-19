@@ -34,8 +34,8 @@ In the dashboard: **Items** → **New item** → upload the ZIP. The item opens 
 | Category | Tools (or Shopping) |
 | Language | English (add Danish later if you like) |
 | Store icon | `extension/icons/icon128.png` |
-| Screenshots | At least 1, at **1280×800** or **640×400**. A real site with badges visible, plus one of the popup. |
-| Small promo tile | 440×280 image. The dashboard may mark it required; it can be the icon on a plain background with the name. |
+| Screenshots | Upload `store/screenshot-1.png` … `screenshot-4.png` (1280×800), in that order. |
+| Small promo tile | `store/promo-tile.png` (440×280). |
 
 ### Privacy
 
@@ -71,3 +71,13 @@ Installed copies update automatically within a few hours of approval.
 - Permission justifications that are vague or missing.
 - Screenshots that don't show the extension doing its job.
 - A description that oversells or lists keywords instead of describing the extension.
+
+## Regenerating the store images
+
+The images in `store/` are drawn by `store/promo.html`. Serve the repo root (`python -m http.server 8765`) and export each frame with headless Chrome, where `#f1`–`#f4` are the screenshots and `#f5` is the promo tile:
+
+```powershell
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new --hide-scrollbars --window-size=1280,800 --screenshot=store\screenshot-1.png "http://localhost:8765/store/promo.html#f1"
+```
+
+Use `--window-size=440,280` for `#f5`.
