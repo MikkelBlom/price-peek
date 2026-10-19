@@ -36,10 +36,14 @@ Generate each line as its own clip if the tool allows it, so you can place them 
 
 ## Adding it to the video
 
-Save the voice as `store/video/voiceover.mp3` (one file, lined up to start at 0:00), then from the repo root:
+The rendered video is silent on purpose: synthesized sound effects sounded cheap, and good promo videos are carried by a real music bed plus the voice.
+
+**Music:** pick a track around **120 BPM** (the animation's beats land on a 0.5 s grid: badges pop at 3.5, 3.75, 4.0 … and scene moves start on whole seconds). The YouTube Audio Library (YouTube Studio → Audio library, filter by "Attribution not required") is free for videos posted on YouTube, which is exactly where this one goes. Look for light, bright electronic or indie-pop; avoid anything with vocals.
+
+Save the voice as `store/video/voiceover.mp3` and the music as `store/video/music.mp3` (both lined up to start at 0:00), then from the repo root:
 
 ```bash
-ffmpeg -i store/video/price-peek-promo.mp4 -i store/video/voiceover.mp3 -filter_complex "[0:a]volume=0.6[sfx];[1:a]volume=1.0[vo];[sfx][vo]amix=inputs=2:duration=first:normalize=0[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k store/video/price-peek-promo-vo.mp4
+ffmpeg -i store/video/price-peek-promo.mp4 -i store/video/music.mp3 -i store/video/voiceover.mp3 -filter_complex "[1:a]atrim=0:30,afade=t=out:st=28:d=2,volume=0.35[m];[2:a]volume=1.0[vo];[m][vo]amix=inputs=2:duration=first:normalize=0[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -shortest store/video/price-peek-promo-final.mp4
 ```
 
-The video's own track has only quiet pops and key clicks, so it works under a voice or on its own.
+Music at 0.35 sits under the voice; raise it if the voice is quiet.

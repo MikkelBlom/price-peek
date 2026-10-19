@@ -1,7 +1,8 @@
-// Records promo-video.html into price-peek-promo.mp4: steps render(t) frame by frame in headless Chrome,
-// screenshots each frame over the DevTools protocol and pipes them to ffmpeg, then adds a synthesized
-// sound-effects track from the page's cue list. Needs Chrome and ffmpeg; no npm packages.
-//   node store/video/record.js [--fps 60] [--from 0] [--to 30] [--out file.mp4]
+// Records promo-video.html into price-peek-promo.mp4: steps render(t) in headless Chrome over the DevTools
+// protocol and pipes screenshots to ffmpeg. Each output frame averages several sub-frames spread over a
+// 180° shutter, which gives real motion blur on fast camera moves. Needs Chrome and ffmpeg; no npm packages.
+//   node store/video/record.js [--fps 60] [--sub 6] [--from 0] [--to 30] [--audio music.mp3] [--out file.mp4]
+//   node store/video/record.js --stills 2,10,16 --dir out/   (single PNG frames, no blur, for checking)
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -9,8 +10,11 @@ const os = require("os");
 
 const arg = (name, def) => { const i = process.argv.indexOf("--" + name); return i > 0 ? process.argv[i + 1] : def; };
 const FPS = +arg("fps", 60);
+const SUB = +arg("sub", 6);
+const SHUTTER = 0.5;
 const DIR = __dirname;
 const OUT = path.resolve(arg("out", path.join(DIR, "price-peek-promo.mp4")));
+const AUDIO = arg("audio");
 const CHROME = process.env.CHROME || "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const PORT = 9333;
 
@@ -40,85 +44,52 @@ async function main() {
     if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text);
     return r.result.value;
   };
+  const done = () => { ws.close(); chrome.kill(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch {} };
 
   await send("Emulation.setDeviceMetricsOverride", { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
   await send("Page.enable");
   await send("Page.navigate", { url: "file:///" + path.join(DIR, "promo-video.html").replace(/\\/g, "/") + "?record" });
   for (let i = 0; i < 100; i++) { await sleep(100); if (await evaluate("typeof window.ready === 'object'").catch(() => false)) break; }
   await evaluate("window.ready");
-  const duration = await evaluate("window.DURATION");
-  const sfx = await evaluate("window.SFX");
-  // --stills 1.5,8,16 writes single PNG frames to --dir for checking, instead of a video
+  const shot = async (t, format = "png") => {
+    await evaluate(`render(${t})`);
+    return Buffer.from((await send("Page.captureScreenshot", { format, optimizeForSpeed: true })).data, "base64");
+  };
+
   const stills = arg("stills");
   if (stills) {
     const dir = path.resolve(arg("dir", "."));
-    for (const t of stills.split(",").map(Number)) {
-      await evaluate(`render(${t})`);
-      const { data } = await send("Page.captureScreenshot", { format: "png" });
-      fs.writeFileSync(path.join(dir, `still-${t}.png`), Buffer.from(data, "base64"));
-    }
-    ws.close(); chrome.kill(); return;
+    for (const t of stills.split(",").map(Number)) fs.writeFileSync(path.join(dir, `still-${t}.png`), await shot(t));
+    return done();
   }
+
+  const duration = await evaluate("window.DURATION");
   const from = +arg("from", 0), to = Math.min(+arg("to", duration), duration);
   const frames = Math.round((to - from) * FPS);
-
-  const silent = OUT.replace(/\.mp4$/, ".video.mp4");
-  const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-i", "-",
-    "-c:v", "libx264", "-preset", "slow", "-crf", "14", "-pix_fmt", "yuv420p", "-movflags", "+faststart", silent], { stdio: ["pipe", "inherit", "inherit"] });
+  // average each group of SUB sub-frames into one output frame
+  const vf = SUB > 1 ? `tmix=frames=${SUB},select='eq(mod(n\\,${SUB})\\,${SUB - 1})',setpts=N/${FPS}/TB` : "null";
+  const ffArgs = ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS * SUB), "-i", "-"];
+  if (AUDIO) ffArgs.push("-i", AUDIO);
+  ffArgs.push("-vf", vf, "-r", String(FPS), "-c:v", "libx264", "-preset", "slow", "-crf", "14", "-pix_fmt", "yuv420p");
+  if (AUDIO) ffArgs.push("-map", "0:v", "-map", "1:a", "-c:a", "aac", "-b:a", "192k", "-shortest");
+  ffArgs.push("-movflags", "+faststart", OUT);
+  const ff = spawn("ffmpeg", ffArgs, { stdio: ["pipe", "inherit", "inherit"] });
   const ffDone = new Promise((res, rej) => ff.on("close", c => c === 0 ? res() : rej(new Error("ffmpeg exited " + c))));
 
+  const t0 = Date.now();
   for (let f = 0; f < frames; f++) {
-    const t = from + f / FPS;
-    await evaluate(`render(${t})`);
-    const { data } = await send("Page.captureScreenshot", { format: "png", optimizeForSpeed: true });
-    if (!ff.stdin.write(Buffer.from(data, "base64"))) await new Promise(r => ff.stdin.once("drain", r));
-    if (f % FPS === 0) process.stdout.write(`\r${t.toFixed(0)}s / ${to}s`);
+    for (let s = 0; s < SUB; s++) {
+      // sub-frames centred on the frame time, spanning SHUTTER of a frame
+      const t = from + (f + (SUB > 1 ? (s / (SUB - 1) - .5) * SHUTTER : 0)) / FPS;
+      const img = await shot(Math.max(0, t));
+      if (!ff.stdin.write(img)) await new Promise(r => ff.stdin.once("drain", r));
+    }
+    if (f % FPS === 0) process.stdout.write(`\r${(from + f / FPS).toFixed(0)}s / ${to}s  (${((Date.now() - t0) / 1000).toFixed(0)}s elapsed)`);
   }
   ff.stdin.end();
   await ffDone;
-  ws.close(); chrome.kill();
-  process.stdout.write("\n");
-
-  // sound effects, shifted to the recorded range
-  const wav = OUT.replace(/\.mp4$/, ".sfx.wav");
-  fs.writeFileSync(wav, makeSfx(sfx.map(c => ({ ...c, t: c.t - from })).filter(c => c.t >= 0 && c.t < to - from), to - from));
-  await new Promise((res, rej) => spawn("ffmpeg", ["-y", "-loglevel", "error", "-i", silent, "-i", wav,
-    "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", OUT], { stdio: "inherit" })
-    .on("close", c => c === 0 ? res() : rej(new Error("mux failed"))));
-  fs.rmSync(silent); fs.rmSync(wav);
-  try { fs.rmSync(profile, { recursive: true, force: true }); } catch {}
-  console.log("wrote", OUT);
-}
-
-// Small synthesized sounds: soft pops for badges, ticks for keys, a click, a whoosh and a two-note chime.
-function makeSfx(cues, seconds) {
-  const SR = 48000, n = Math.ceil(seconds * SR), buf = new Float32Array(n);
-  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
-  const add = (t0, len, fn) => { const s0 = Math.round(t0 * SR); for (let i = 0; i < len * SR && s0 + i < n; i++) if (s0 + i >= 0) buf[s0 + i] += fn(i / SR); };
-  for (const { t, kind } of cues) {
-    if (kind === "pop" || kind === "soft") {
-      const f0 = kind === "pop" ? 1250 : 700, f1 = kind === "pop" ? 520 : 380, amp = kind === "pop" ? .22 : .11, d = .09;
-      let ph = 0;
-      add(t, d, x => { const f = f1 + (f0 - f1) * Math.exp(-x * 45); ph += 2 * Math.PI * f / SR; return Math.sin(ph) * amp * Math.exp(-x * 38) * Math.min(1, x * 2000); });
-    } else if (kind === "key") {
-      let lp = 0;
-      add(t, .035, x => { lp += (rnd() - lp) * .35; return lp * .3 * Math.exp(-x * 160); });
-    } else if (kind === "click") {
-      let ph = 0;
-      add(t, .03, x => { ph += 2 * Math.PI * 1800 / SR; return (Math.sin(ph) * .12 + rnd() * .05) * Math.exp(-x * 220); });
-    } else if (kind === "whoosh") {
-      let lp = 0, lp2 = 0;
-      add(t, .8, x => { const k = .02 + .12 * Math.sin(Math.PI * x / .8); lp += (rnd() - lp) * k; lp2 += (lp - lp2) * k; return lp2 * .5 * Math.sin(Math.PI * x / .8); });
-    } else if (kind === "chime") {
-      for (const [f, dt] of [[1046.5, 0], [1568, .11]]) add(t + dt, 1.4, x => (Math.sin(2 * Math.PI * f * x) + .25 * Math.sin(4 * Math.PI * f * x)) * .09 * Math.exp(-x * 3.2) * Math.min(1, x * 400));
-    }
-  }
-  const out = Buffer.alloc(44 + n * 2);
-  out.write("RIFF", 0); out.writeUInt32LE(36 + n * 2, 4); out.write("WAVE", 8); out.write("fmt ", 12);
-  out.writeUInt32LE(16, 16); out.writeUInt16LE(1, 20); out.writeUInt16LE(1, 22); out.writeUInt32LE(SR, 24);
-  out.writeUInt32LE(SR * 2, 28); out.writeUInt16LE(2, 32); out.writeUInt16LE(16, 34); out.write("data", 36); out.writeUInt32LE(n * 2, 40);
-  for (let i = 0; i < n; i++) out.writeInt16LE(Math.round(Math.max(-1, Math.min(1, buf[i])) * 32767), 44 + i * 2);
-  return out;
+  done();
+  console.log("\nwrote", OUT);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
