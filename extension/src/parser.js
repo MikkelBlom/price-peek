@@ -61,8 +61,11 @@
   const G_PER_GEUN = 600;
 
   // Comma or dot can be a thousands separator or a decimal mark; decide from the digit grouping.
-  function parseNum(s) {
+  // scaled: the number is followed by a unit or multiplier ("4.015 billion", "1.234억"); then a lone dot
+  // is a decimal point, since nobody writes thousands separators in front of "billion".
+  function parseNum(s, scaled = false) {
     s = s.replace(/[   ]/g, "");
+    if (scaled && /^\d+\.\d+$/.test(s)) return Number(s);
     if (/^\d{1,3}(?:[.,]\d{3})+$/.test(s)) return Number(s.replace(/[.,]/g, ""));
     if (/^\d{1,3}(?:,\d{3})+\.\d+$/.test(s)) return Number(s.replace(/,/g, ""));
     if (/^\d{1,3}(?:\.\d{3})+,\d+$/.test(s)) return Number(s.replace(/\./g, "").replace(",", "."));
@@ -74,7 +77,7 @@
     let total = 0;
     let lastBig = null;
     for (const [, num, small, big] of s.matchAll(UNIT_GROUP_RE)) {
-      let v = parseNum(num);
+      let v = parseNum(num, !!(small || big));
       if (small) v *= SMALL[small];
       if (big) {
         v *= BIG[big];
@@ -95,7 +98,7 @@
     const m = s.match(PLAIN_RE);
     if (!m) return NaN;
     const mult = m[2] ? MULTS[m[2].toLowerCase().replace(".", "")] : 1;
-    return mult ? parseNum(m[1]) * mult : NaN;
+    return mult ? parseNum(m[1], mult > 1) * mult : NaN;
   }
 
   // Returns non-overlapping, sorted matches:

@@ -4,3 +4,4 @@ node_modules/
 Thumbs.db
 .claude/settings.local.json
 .claude/
+*.zip

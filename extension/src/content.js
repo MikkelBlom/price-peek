@@ -80,6 +80,31 @@
     return cur || document.body;
   }
 
+  // Ancestors that clip their content (overflow other than visible). Text cut off by one of them,
+  // like Google's collapsed "see more" boxes, must not get a badge floating over empty space.
+  function clipAncestors(el, cache) {
+    const out = [];
+    for (let cur = el; cur && cur !== document.documentElement; cur = cur.parentElement) {
+      let clips = cache.get(cur);
+      if (clips === undefined) {
+        const s = getComputedStyle(cur);
+        cache.set(cur, (clips = s.overflowX !== "visible" || s.overflowY !== "visible"));
+      }
+      if (clips) out.push(cur);
+    }
+    return out;
+  }
+
+  function isShownAt(m, r) {
+    const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
+    for (const c of m.clips) {
+      const cr = c.getBoundingClientRect();
+      if (cx < cr.left || cx > cr.right || cy < cr.top || cy > cr.bottom) return false;
+    }
+    const p = m.sNode.parentElement;
+    return !p.checkVisibility || p.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+  }
+
   function contextOf(el, cache) {
     const item = nearestBlock(el, cache);
     let block = item;
@@ -100,18 +125,24 @@
     const groups = [];
     let current = null;
     // Every text node is kept, even ones without digits: a lone "%" between "15" and "310,000원" must stay a boundary.
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+    // <br> elements are visited too: a line break separates text just like a flex item boundary does.
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
       acceptNode(n) {
+        if (n.nodeType === 1) return n.tagName === "BR" ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
         const p = n.parentElement;
         if (!p || SKIP_TAGS.has(p.tagName.toUpperCase()) || p.isContentEditable) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       },
     });
+    let breakBefore = false;
     for (let n; (n = walker.nextNode()); ) {
+      if (n.nodeType === 1) { breakBefore = true; continue; }
       const { item, block } = contextOf(n.parentElement, cache);
-      if (!current || current.block !== block) groups.push((current = { block, nodes: [], items: [] }));
+      if (!current || current.block !== block) groups.push((current = { block, nodes: [], items: [], breaks: [] }));
       current.nodes.push(n);
       current.items.push(item);
+      current.breaks.push(breakBefore);
+      breakBefore = false;
     }
 
     const found = [];
@@ -121,7 +152,7 @@
       const offsets = [];
       let text = "";
       g.nodes.forEach((n, i) => {
-        if (i > 0 && g.items[i] !== g.items[i - 1]) text += ITEM_GAP;
+        if (i > 0 && (g.breaks[i] || g.items[i] !== g.items[i - 1])) text += ITEM_GAP;
         offsets.push(text.length);
         text += n.nodeValue;
       });
@@ -144,6 +175,7 @@
     }
 
     for (const m of matches) m.el.remove();
+    const clipCache = new Map();
     pageCurrency = mainCurrency(found);
     matches = found.map(m => ({ ...m, label: labelFor(m) })).filter(m => m.label).map(m => {
       const el = document.createElement("div");
@@ -156,7 +188,7 @@
       layer.appendChild(el);
       // Crossed-out old prices rank below everything else.
       const struck = style.textDecorationLine.includes("line-through") || !!m.sNode.parentElement.closest("del, s, strike");
-      return { ...m, el, w: 0, h: 0, rank: struck ? 0 : fs };
+      return { ...m, el, w: 0, h: 0, rank: struck ? 0 : fs, clips: clipAncestors(m.sNode.parentElement, clipCache) };
     });
     scanFields();
     schedule();
@@ -264,6 +296,7 @@
       }
       const r = range.getBoundingClientRect();
       if (!r.width || !r.height || r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw) continue;
+      if (!isShownAt(m, r)) continue;
       m.rect = r;
       visible.push(m);
     }

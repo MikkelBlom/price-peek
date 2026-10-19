@@ -60,6 +60,16 @@ test("Naver shopping text joined across flex items", () => {
   assert.deepEqual(krw("48,500 원"), [48500]);
 });
 
+test("dot before a multiplier or unit is a decimal point", () => {
+  // Google (translated): "Actual transaction price in August 2026: 4.015 billion KRW"
+  assert.deepEqual(krw("4.015 billion KRW"), [4015000000]);
+  assert.deepEqual(krw("3.4 billion KRW"), [3400000000]);
+  assert.deepEqual(money("$1.250M"), [["USD", 1250000]]);
+  assert.deepEqual(krw("1.015억"), [101500000]);
+  assert.deepEqual(krw("1.500.000원"), [1500000]); // no unit: dots stay thousands separators
+  assert.deepEqual(krw("₩1.500"), [1500]);
+});
+
 test("dollars", () => {
   assert.deepEqual(money("$1,299.99"), [["USD", 1299.99]]);
   assert.deepEqual(money("US$ 45"), [["USD", 45]]);
