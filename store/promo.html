@@ -205,6 +205,12 @@ const FRAMES = [
       <div class="tl">Any price, in your currency.</div>
       <div class="stack"><span>₩ won</span><span>$ dollar</span><span>¥ yen</span></div>
     </div>` },
+  { title: "Marquee promo tile", size: [1400, 560], tile: true, html: `<div class="s" style="width:1400px;height:560px">
+      <h3 class="h" style="left:80px;top:110px;width:560px;font-size:80px">Every price, in <span class="accent">your</span> currency.</h3>
+      <p class="sub" style="left:80px;top:320px;width:500px">Prices on any site, shown in kroner right on the price.</p>
+      ${[["Seoul", "₩1,500,000", 1500000, "KRW", 700, 70], ["Tokyo", "¥42,800", 42800, "JPY", 1110, 120], ["New York", "$249", 249, "USD", 760, 300], ["Berlin", "19,99 €", 19.99, "EUR", 1080, 330]]
+        .map(([city, txt, v, c, x, y]) => `<div class="chip" style="left:${x}px;top:${y}px"><span class="p">${txt}${badge(v, c)}</span><span class="city">${city}</span></div>`).join("")}
+      <div class="mark" style="bottom:56px"><i>kr.</i>Price Peek</div></div>` },
 ];
 
 // "#f1"…"#f5" renders one frame alone at full size, for exporting PNGs.
