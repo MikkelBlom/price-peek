@@ -35,13 +35,15 @@
 
   const MULT = String.raw`(?:\s?(?:k|m|mn|mil|million|mio\.?|b|bn|billion|mia\.?|mrd\.?|thousand)(?![A-Za-z]))`;
 
+  // Neither edge may touch a word, path or host character, so codes inside links don't count:
+  // Outlook's "eur03.safelinks.protection.outlook.com" is not EUR 3.
   const MONEY_RE = new RegExp(
-    String.raw`(?<![A-Za-z0-9.,])(?:` +
+    String.raw`(?<![A-Za-z0-9.,/@_=%])(?:` +
       String.raw`(?<pre>${alt(PREFIX)})\s?(?<a1>${KOR}|${CJK}|${NUM}${MULT}?)` +
       String.raw`|(?<a2>${KOR})` +
       String.raw`|(?<a3>${CJK})\s?(?<s3>円|元|块|塊)` +
       String.raw`|(?<a4>${NUM}${MULT}?)\s?(?<s4>${alt(SUFFIX)})(?![A-Za-z])` +
-    `)`,
+    String.raw`)(?![A-Za-z_@]|\.[A-Za-z0-9])`,
     "gi"
   );
   const UNIT_GROUP_RE = new RegExp(String.raw`(${NUM})\s?([천백千百])?\s?([조억만兆億亿万萬])?`, "g");

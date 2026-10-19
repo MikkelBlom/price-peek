@@ -128,6 +128,16 @@ test("non-prices are not matched", () => {
   assert.deepEqual(money("EURO 2024"), []);
 });
 
+test("currency codes inside links are not prices", () => {
+  assert.deepEqual(money("Visit https://eur03.safelinks.protection.outlook.com/?url=x"), []);
+  assert.deepEqual(money("cdn.example.com/usd5/logo.png"), []);
+  assert.deepEqual(money("id=EUR3&x=1"), []);
+  assert.deepEqual(money("user_usd10@mail.com"), []);
+  assert.deepEqual(money("Price: €3. Next item"), [["EUR", 3]]);
+  assert.deepEqual(money("(US$12.50)"), [["USD", 12.5]]);
+  assert.deepEqual(money("-$5 off"), [["USD", 5]]);
+});
+
 test("area and weight, metric only", () => {
   assert.deepEqual(measures("25평"), [["area", 83]]);
   assert.deepEqual(measures("30평대 아파트"), [["area", 99]]);
