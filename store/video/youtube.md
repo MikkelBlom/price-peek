@@ -16,6 +16,6 @@ Price Peek is a free Chrome extension that finds prices on any website and shows
 • Works on numbers you type, too: price filters, budgets
 • Never changes the page; daily exchange rates from the European Central Bank
 
-Get it on the Chrome Web Store: <store link>
+Get it on the Chrome Web Store (link coming soon)
 
 Voice: ElevenLabs
