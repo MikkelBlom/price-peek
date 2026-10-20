@@ -42,7 +42,8 @@
       String.raw`(?<pre>${alt(PREFIX)})\s?(?<a1>${KOR}|${CJK}|${NUM}${MULT}?)` +
       String.raw`|(?<a2>${KOR})` +
       String.raw`|(?<a3>${CJK})\s?(?<s3>円|元|块|塊)` +
-      String.raw`|(?<a4>${NUM}${MULT}?)\s?(?<s4>${alt(SUFFIX)})(?![A-Za-z])` +
+      // A symbol that can also be a prefix belongs to the number after it: "1 € 415" (a 1-person pill next to the price) is €415, not €1.
+      String.raw`|(?<a4>${NUM}${MULT}?)\s?(?<s4>${alt(SUFFIX)})(?![A-Za-z])(?<![€₩](?=\s?\d))` +
     String.raw`)(?![A-Za-z_@]|\.[A-Za-z0-9])`,
     "gi"
   );

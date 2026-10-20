@@ -128,6 +128,13 @@ test("non-prices are not matched", () => {
   assert.deepEqual(money("EURO 2024"), []);
 });
 
+test("a prefix symbol belongs to the number after it", () => {
+  assert.deepEqual(money("1 € 415"), [["EUR", 415]]); // a "1 person" pill next to the price
+  assert.deepEqual(money("2 ₩5,000"), [["KRW", 5000]]);
+  assert.deepEqual(money("19,99 € per month"), [["EUR", 19.99]]);
+  assert.deepEqual(money("19,99 €"), [["EUR", 19.99]]);
+});
+
 test("currency codes inside links are not prices", () => {
   assert.deepEqual(money("Visit https://eur03.safelinks.protection.outlook.com/?url=x"), []);
   assert.deepEqual(money("cdn.example.com/usd5/logo.png"), []);
