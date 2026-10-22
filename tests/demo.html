@@ -30,6 +30,9 @@
   <div class="card">가격 <input id="min" placeholder="최소" size="10"> 원 ~ <input id="max" placeholder="최대" size="10"> 원 · Budget <input id="free" size="12"></div>
   <!-- Rich-text editor (LinkedIn/Gmail style): typed amounts get badges like page text -->
   <div class="card" id="editor" contenteditable="true">Post draft: it cost 5,000만원 in Seoul</div>
+  <!-- Modal dialog (LinkedIn's composer): it sits in the top layer, badges must still show above it -->
+  <div class="card"><button id="open-modal" onclick="document.getElementById('modal').showModal()">Open modal composer</button></div>
+  <dialog id="modal" style="width:420px"><div contenteditable="true" style="min-height:60px">Draft in a modal: 5,000만원</div><input placeholder="Search" value="₩50,000" size="12"></dialog>
   <div class="tall"></div>
   <div class="card">Further down: <span class="price">₩350,000,000</span></div>
   <div class="card" id="late"></div>

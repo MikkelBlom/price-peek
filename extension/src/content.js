@@ -53,6 +53,26 @@
     </style><div id="l"></div>`;
     layer = shadow.getElementById("l");
     document.documentElement.appendChild(host);
+    // A manual popover lives in the browser's top layer, so badges can sit above modal dialogs
+    // (LinkedIn's post composer) and fullscreen elements, which no z-index can beat.
+    if (host.showPopover) host.popover = "manual";
+    raiseLayer();
+  }
+
+  // The top layer stacks in opening order: re-show the overlay whenever another top-layer element is open,
+  // so it stays the last (topmost) one. Hiding and re-showing in the same task causes no flicker.
+  const TOP_LAYER = "dialog:modal, :popover-open:not(krw-dkk-overlay), :fullscreen";
+  function raiseLayer() {
+    if (!host || !host.showPopover) return;
+    try {
+      if (host.matches(":popover-open")) {
+        if (!document.querySelector(TOP_LAYER)) return;
+        host.hidePopover();
+      }
+      host.showPopover();
+    } catch (e) {
+      // not connected yet or popovers unsupported: the z-index fallback still applies
+    }
   }
 
   function clearBadges() {
@@ -193,6 +213,7 @@
       return { ...m, el, w: 0, h: 0, rank: struck ? 0 : fs, clips: clipAncestors(m.sNode.parentElement, clipCache) };
     });
     scanFields();
+    raiseLayer();
     schedule();
   }
 
@@ -260,6 +281,7 @@
     const t = e.target;
     if (!observer || !layer || !t || !t.matches || !t.matches(FIELD_SELECTOR)) return;
     scanField(t);
+    raiseLayer();
     schedule();
   }
 
@@ -273,11 +295,16 @@
     if (!matches.length && !fields.size) return;
     const vw = innerWidth, vh = innerHeight;
     const placed = [];
+    // While a modal dialog or a fullscreen element covers the page, only what's inside it gets badges;
+    // the overlay sits above it in the top layer, so badges from the page behind would float on top.
+    const modals = document.querySelectorAll("dialog:modal");
+    const front = document.fullscreenElement || modals[modals.length - 1] || null;
+    const behind = node => !!front && !front.contains(node);
 
     // Field badges always show, and go first so price badges make room for them.
     for (const [input, f] of fields) {
       const r = input.getBoundingClientRect();
-      const off = !r.width || !r.height || r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw;
+      const off = !r.width || !r.height || r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw || behind(input);
       f.el.hidden = off;
       if (off) continue;
       const x = Math.min(r.right - 10, vw - f.w - 4);
@@ -289,7 +316,7 @@
     const visible = [];
     for (const m of matches) {
       m.rect = null;
-      if (!m.sNode.isConnected || !m.eNode.isConnected) continue;
+      if (!m.sNode.isConnected || !m.eNode.isConnected || behind(m.sNode)) continue;
       try {
         range.setStart(m.sNode, m.sOff);
         range.setEnd(m.eNode, m.eOff);
@@ -351,6 +378,11 @@
       addEventListener("resize", schedule, { passive: true });
       addEventListener("input", onFieldInput, { capture: true, passive: true });
       addEventListener("change", onFieldInput, { capture: true, passive: true });
+      // Dialogs, popovers and fullscreen open and close through attributes and the top layer, which the
+      // mutation observer doesn't see: re-raise the overlay and redraw (who's in front decides who gets badges).
+      const onTopLayer = () => { if (observer) { raiseLayer(); schedule(); } };
+      for (const type of ["toggle", "close", "cancel"]) addEventListener(type, onTopLayer, { capture: true, passive: true });
+      document.addEventListener("fullscreenchange", onTopLayer, { passive: true });
       addEventListener("mousemove", e => {
         pointer = { x: e.clientX, y: e.clientY };
         if (matches.length) schedule();
