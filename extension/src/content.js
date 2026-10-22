@@ -130,7 +130,9 @@
       acceptNode(n) {
         if (n.nodeType === 1) return n.tagName === "BR" ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
         const p = n.parentElement;
-        if (!p || SKIP_TAGS.has(p.tagName.toUpperCase()) || p.isContentEditable) return NodeFilter.FILTER_REJECT;
+        // Rich-text editors (contenteditable, e.g. a LinkedIn post or a Gmail draft) are scanned like page text:
+        // the typed amount gets its badge where it stands, and typing re-scans through the mutation observer.
+        if (!p || SKIP_TAGS.has(p.tagName.toUpperCase())) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       },
     });
