@@ -37,6 +37,7 @@ Units, metric only: `평`/`坪` and `畳`/`帖` → m², `근` → g. Imperial u
 
 - Numbers you type into text fields get a badge too. A bare number like `500000` takes the currency named around the field (placeholder, label or nearby text, such as a "최소 ___ 원" price filter).
 - At most 3 price badges (and 3 unit badges) at a time, picked from what's on screen: the biggest prices first (crossed-out old prices last), then top to bottom. Hover any other price to see its badge. "Show all prices" lifts the limit.
+- Rest the pointer on a price for about half a second and its badge opens into a small card with the amount in every currency you detect, your picked currency first. It's hover only: clicks still go to the page.
 - Prices that appear later (infinite scroll, single-page apps) and prices inside embedded frames are picked up.
 - Never changes the page text. Badges sit in a separate layer that clicks pass through.
 

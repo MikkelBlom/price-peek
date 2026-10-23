@@ -14,7 +14,10 @@
   let rates = null;
   let matches = [];
   let pointer = { x: -1, y: -1 };
-  let host, layer, observer, scanTimer, lastScan = 0, frame = 0;
+  let host, layer, card, observer, scanTimer, lastScan = 0, frame = 0;
+  // Resting the pointer on a price for HOVER_DWELL ms opens a card with the amount in the other currencies.
+  const HOVER_DWELL = 450;
+  let hover = { key: null, since: 0, timer: 0, shownKey: null };
   const range = document.createRange();
 
   // Inside embedded frames, the site toggle follows the tab's top-level site.
@@ -49,9 +52,19 @@
            font: 600 12px/1.75 "Segoe UI", system-ui, -apple-system, sans-serif; font-variant-numeric: tabular-nums;
            background: #16181d; color: #fff; padding: 0 .55em; border-radius: 6px 6px 6px 1px;
            box-shadow: 0 1px 3px rgba(0,0,0,.25); letter-spacing: 0; }
-      .b[hidden] { display: none; }
-    </style><div id="l"></div>`;
+      .b[hidden], .c[hidden] { display: none; }
+      .c { position: fixed; left: 0; top: 0; pointer-events: none; min-width: 9em;
+           font: 500 12px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif; font-variant-numeric: tabular-nums;
+           background: #16181d; color: #fff; padding: .5em .7em .55em; border-radius: 8px;
+           box-shadow: 0 4px 16px rgba(0,0,0,.3); letter-spacing: 0; }
+      .c .h { font-weight: 600; color: #9aa0ab; margin-bottom: .2em; white-space: nowrap; }
+      .c .r { display: flex; justify-content: space-between; gap: 1.2em; white-space: nowrap; }
+      .c .r span:first-child { color: #9aa0ab; }
+      .c .r.t { font-weight: 700; }
+      .c .r.t span:first-child { color: #fff; }
+    </style><div id="l"></div><div class="c" id="c" hidden></div>`;
     layer = shadow.getElementById("l");
+    card = shadow.getElementById("c");
     document.documentElement.appendChild(host);
     // A manual popover lives in the browser's top layer, so badges can sit above modal dialogs
     // (LinkedIn's post composer) and fullscreen elements, which no z-index can beat.
@@ -77,6 +90,7 @@
 
   function clearBadges() {
     matches = [];
+    hideCard();
     fields.clear();
     if (layer) layer.textContent = "";
   }
@@ -290,9 +304,65 @@
     if (!frame) frame = requestAnimationFrame(render);
   }
 
+  // ---------- hover card ----------
+  // The same price keeps its key across re-scans (which rebuild the match objects every second at most).
+  const keyOf = m => `${m.currency}|${m.value}|${Math.round(m.rect.left)}|${Math.round(m.rect.top)}`;
+
+  function hideCard() {
+    if (card) card.hidden = true;
+    hover.shownKey = null;
+  }
+
+  // The amount in every currency the user detects, the picked target first; the price's own currency is the heading.
+  function fillCard(m) {
+    const list = [settings.target, ...P.CURRENCIES.filter(c => c !== settings.target && !settings.disabledCurrencies.includes(c))]
+      .filter(c => c !== m.currency);
+    const head = document.createElement("div");
+    head.className = "h";
+    // The heading is the price exactly as the page writes it ("₩1,500,000+", "3억 5,000만원").
+    let text = "";
+    try {
+      const r = document.createRange();
+      r.setStart(m.sNode, m.sOff);
+      r.setEnd(m.eNode, m.eOff);
+      text = r.toString().replace(/\s+/g, " ").trim();
+    } catch (e) {
+      // text changed under us: fall back to our own formatting
+    }
+    head.textContent = (text || P.formatMoney(m.value, m.currency)) + (m.plus && !text.endsWith("+") ? "+" : "");
+    const rows = list.map(c => {
+      const v = P.convert(m.value, m.currency, c, rates.rates);
+      if (!(v > 0)) return null;
+      const row = document.createElement("div");
+      row.className = c === settings.target ? "r t" : "r";
+      const code = document.createElement("span");
+      code.textContent = c;
+      const val = document.createElement("span");
+      val.textContent = P.formatMoney(v, c, m.plus);
+      row.append(code, val);
+      return row;
+    }).filter(Boolean);
+    card.replaceChildren(head, ...rows);
+  }
+
+  // anchor: where the price's badge sits (x, y = its top-left), rect: the price itself.
+  function placeCard(m, anchor, vw, vh) {
+    const key = keyOf(m);
+    if (hover.shownKey !== key) {
+      fillCard(m);
+      card.hidden = false;
+      hover.shownKey = key;
+    }
+    const w = card.offsetWidth, h = card.offsetHeight;
+    const x = Math.max(4, Math.min(anchor.x, vw - w - 4));
+    let y = anchor.y - h - 3;
+    if (y < 2) y = Math.min(m.rect.bottom + 4, vh - h - 2); // no room above: open below the price
+    card.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+  }
+
   function render() {
     frame = 0;
-    if (!matches.length && !fields.size) return;
+    if (!matches.length && !fields.size) return hideCard();
     const vw = innerWidth, vh = innerHeight;
     const placed = [];
     // While a modal dialog or a fullscreen element covers the page, only what's inside it gets badges;
@@ -338,10 +408,24 @@
       const ofKind = visible.filter(m => (m.kind === "money") === isMoney);
       (settings.showAll ? ofKind : ofKind.slice(0, MAX_VISIBLE)).forEach(m => shown.add(m));
     }
+    let hovered = null;
     for (const m of visible) {
       const r = m.rect;
-      if (pointer.x >= r.left - 4 && pointer.x <= r.right + 4 && pointer.y >= r.top - 4 && pointer.y <= r.bottom + 4) shown.add(m);
+      if (pointer.x >= r.left - 4 && pointer.x <= r.right + 4 && pointer.y >= r.top - 4 && pointer.y <= r.bottom + 4) {
+        shown.add(m);
+        if (!hovered && m.kind === "money") hovered = m;
+      }
     }
+    // Dwell timing: the card opens once the pointer has rested on the same price for HOVER_DWELL ms.
+    const hoverKey = hovered && keyOf(hovered);
+    if (hoverKey !== hover.key) {
+      hover.key = hoverKey;
+      hover.since = performance.now();
+      clearTimeout(hover.timer);
+      if (hoverKey) hover.timer = setTimeout(schedule, HOVER_DWELL + 10);
+    }
+    const cardFor = hovered && performance.now() - hover.since >= HOVER_DWELL ? hovered : null;
+    let cardAnchor = null;
 
     for (const m of matches) {
       if (!shown.has(m)) { m.el.hidden = true; continue; }
@@ -361,7 +445,10 @@
       }
       placed.push({ x, y, w: m.w, h: m.h });
       m.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+      if (m === cardFor) cardAnchor = { x, y };
     }
+    if (cardFor && cardAnchor) placeCard(cardFor, cardAnchor, vw, vh);
+    else hideCard();
   }
 
   // ---------- wiring ----------
