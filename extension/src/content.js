@@ -380,7 +380,12 @@
       addEventListener("change", onFieldInput, { capture: true, passive: true });
       // Dialogs, popovers and fullscreen open and close through attributes and the top layer, which the
       // mutation observer doesn't see: re-raise the overlay and redraw (who's in front decides who gets badges).
-      const onTopLayer = () => { if (observer) { raiseLayer(); schedule(); } };
+      // Our own hide/show in raiseLayer() fires "toggle" on the host, and a capture listener on window sees it.
+      // Reacting to it re-raised the overlay forever (one core at 100 % and growing memory in fullscreen).
+      const onTopLayer = e => {
+        if (e.target === host) return;
+        if (observer) { raiseLayer(); schedule(); }
+      };
       for (const type of ["toggle", "close", "cancel"]) addEventListener(type, onTopLayer, { capture: true, passive: true });
       document.addEventListener("fullscreenchange", onTopLayer, { passive: true });
       addEventListener("mousemove", e => {
