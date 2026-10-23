@@ -53,15 +53,14 @@
            background: #16181d; color: #fff; padding: 0 .55em; border-radius: 6px 6px 6px 1px;
            box-shadow: 0 1px 3px rgba(0,0,0,.25); letter-spacing: 0; }
       .b[hidden], .c[hidden] { display: none; }
-      .c { position: fixed; left: 0; top: 0; pointer-events: none; min-width: 9em;
-           font: 500 12px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif; font-variant-numeric: tabular-nums;
-           background: #16181d; color: #fff; padding: .5em .7em .55em; border-radius: 8px;
-           box-shadow: 0 4px 16px rgba(0,0,0,.3); letter-spacing: 0; }
-      .c .h { font-weight: 600; color: #9aa0ab; margin-bottom: .2em; white-space: nowrap; }
-      .c .r { display: flex; justify-content: space-between; gap: 1.2em; white-space: nowrap; }
-      .c .r span:first-child { color: #9aa0ab; }
+      .c { position: fixed; left: 0; top: 0; pointer-events: none;
+           font: 600 12px/1.75 "Segoe UI", system-ui, -apple-system, sans-serif; font-variant-numeric: tabular-nums;
+           background: #16181d; color: #fff; padding: 0 .55em; border-radius: 6px 6px 6px 1px;
+           box-shadow: 0 2px 10px rgba(0,0,0,.3); letter-spacing: 0; }
+      .c.down { border-radius: 1px 6px 6px 6px; }
+      .c .h { color: #9aa0ab; font-weight: 500; white-space: nowrap; }
+      .c .r { white-space: nowrap; }
       .c .r.t { font-weight: 700; }
-      .c .r.t span:first-child { color: #fff; }
     </style><div id="l"></div><div class="c" id="c" hidden></div>`;
     layer = shadow.getElementById("l");
     card = shadow.getElementById("c");
@@ -308,18 +307,19 @@
   // The same price keeps its key across re-scans (which rebuild the match objects every second at most).
   const keyOf = m => `${m.currency}|${m.value}|${Math.round(m.rect.left)}|${Math.round(m.rect.top)}`;
 
+  let expanded = null; // the match whose badge is currently grown into the card
+
   function hideCard() {
     if (card) card.hidden = true;
+    if (expanded && expanded.el) expanded.el.style.visibility = "";
+    expanded = null;
     hover.shownKey = null;
   }
 
-  // The amount in every currency the user detects, the picked target first; the price's own currency is the heading.
-  function fillCard(m) {
-    const list = [settings.target, ...P.CURRENCIES.filter(c => c !== settings.target && !settings.disabledCurrencies.includes(c))]
-      .filter(c => c !== m.currency);
-    const head = document.createElement("div");
-    head.className = "h";
-    // The heading is the price exactly as the page writes it ("₩1,500,000+", "3억 5,000만원").
+  // Rows: the amount in every currency the user detects. The picked currency's row is the badge itself, so it
+  // sits where the badge was (bottom when the card grows up, top when it grows down); the heading is the price
+  // exactly as the page writes it ("₩1,500,000+", "3억 5,000만원").
+  function fillCard(m, down) {
     let text = "";
     try {
       const r = document.createRange();
@@ -329,35 +329,60 @@
     } catch (e) {
       // text changed under us: fall back to our own formatting
     }
+    const head = document.createElement("div");
+    head.className = "h";
     head.textContent = (text || P.formatMoney(m.value, m.currency)) + (m.plus && !text.endsWith("+") ? "+" : "");
-    const rows = list.map(c => {
-      const v = P.convert(m.value, m.currency, c, rates.rates);
-      if (!(v > 0)) return null;
-      const row = document.createElement("div");
-      row.className = c === settings.target ? "r t" : "r";
-      const code = document.createElement("span");
-      code.textContent = c;
-      const val = document.createElement("span");
-      val.textContent = P.formatMoney(v, c, m.plus);
-      row.append(code, val);
-      return row;
-    }).filter(Boolean);
-    card.replaceChildren(head, ...rows);
+    // Each amount carries its own sign or code (₩, CN¥, SEK, kr.), so a row is just the amount, like a badge.
+    const row = (c, label) => {
+      const el = document.createElement("div");
+      el.className = c === settings.target ? "r t" : "r";
+      el.textContent = label;
+      return el;
+    };
+    const others = P.CURRENCIES.filter(c => c !== settings.target && c !== m.currency && !settings.disabledCurrencies.includes(c))
+      .map(c => {
+        const v = P.convert(m.value, m.currency, c, rates.rates);
+        return v > 0 ? row(c, P.formatMoney(v, c, m.plus)) : null;
+      })
+      .filter(Boolean);
+    const own = row(settings.target, m.label);
+    card.className = down ? "c down" : "c";
+    card.replaceChildren(...(down ? [own, ...others, head] : [head, ...others, own]));
   }
 
-  // anchor: where the price's badge sits (x, y = its top-left), rect: the price itself.
-  function placeCard(m, anchor, vw, vh) {
+  // The badge grows into the card: same corner, same text in the same place, the other rows unfolding
+  // above it (or below when there's no room above). badge: { x, y, w, h } where the badge is drawn.
+  function placeCard(m, badge, vw, vh) {
     const key = keyOf(m);
-    if (hover.shownKey !== key) {
-      fillCard(m);
+    const fresh = hover.shownKey !== key;
+    if (fresh) {
+      if (expanded && expanded !== m && expanded.el) expanded.el.style.visibility = "";
+      card.style.fontSize = m.el.style.fontSize;
+      card.style.transition = "none";
+      card.style.clipPath = "none";
+      fillCard(m, false);
       card.hidden = false;
+      if (badge.y + badge.h - card.offsetHeight < 2) fillCard(m, true);
       hover.shownKey = key;
     }
-    const w = card.offsetWidth, h = card.offsetHeight;
-    const x = Math.max(4, Math.min(anchor.x, vw - w - 4));
-    let y = anchor.y - h - 3;
-    if (y < 2) y = Math.min(m.rect.bottom + 4, vh - h - 2); // no room above: open below the price
+    const down = card.classList.contains("down");
+    const w = Math.max(card.offsetWidth, badge.w), h = card.offsetHeight;
+    card.style.minWidth = badge.w + "px";
+    const x = Math.max(4, Math.min(badge.x, vw - w - 4));
+    const y = down ? Math.min(badge.y, vh - h - 2) : badge.y + badge.h - h;
     card.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    m.el.style.visibility = "hidden";
+    expanded = m;
+    if (fresh && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // Start clipped to the badge's own box, then open to the full card.
+      const right = Math.max(0, w - badge.w - (x - badge.x)), left = Math.max(0, badge.x - x);
+      card.style.clipPath = down
+        ? `inset(0 ${right}px ${h - badge.h}px ${left}px round 1px 6px 6px 6px)`
+        : `inset(${h - badge.h}px ${right}px 0 ${left}px round 6px 6px 6px 1px)`;
+      card.offsetWidth; // commit the start state before transitioning
+      card.style.transition = "clip-path .16s cubic-bezier(.2,.8,.2,1)";
+      card.style.clipPath = `inset(0 round ${down ? "1px 6px 6px 6px" : "6px 6px 6px 1px"})`;
+    }
   }
 
   function render() {
@@ -445,7 +470,7 @@
       }
       placed.push({ x, y, w: m.w, h: m.h });
       m.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
-      if (m === cardFor) cardAnchor = { x, y };
+      if (m === cardFor) cardAnchor = { x, y, w: m.w, h: m.h };
     }
     if (cardFor && cardAnchor) placeCard(cardFor, cardAnchor, vw, vh);
     else hideCard();
