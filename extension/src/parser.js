@@ -147,11 +147,15 @@
   // A value typed into a form field. Uses its own currency if it has one ("₩500,000", "50만"),
   // otherwise a bare number ("500000") takes the currency named around the field, or failing that
   // the page's main currency (fallback), since translated pages can lose the label ("원" → "one").
+  // A field labelled with a unit that isn't money ("min", "h", "MB", "files") holds a count, not a price,
+  // so it never borrows the page's main currency.
+  const NON_MONEY_UNIT_RE = /(?<![\p{L}\d])(?:ms|secs?|seconds?|min|mins|minutes?|h|hrs?|hours?|days?|weeks?|[KMGT]i?B|bytes?|px|pt|em|rem|%|files?|links?|items?|pcs|stk|kg|km|cm|mm|minutter|timer|dage|uger|filer)(?![\p{L}\d])/iu;
+
   function parseFieldValue(value, context, fallback) {
     const money = findMatches(value).find(m => m.kind === "money");
     if (money) return money;
     if (!/^\s*\d[\d.,\s ]*$/.test(value)) return null;
-    const currency = guessCurrency(context) || fallback;
+    const currency = guessCurrency(context) || (NON_MONEY_UNIT_RE.test(context || "") ? null : fallback);
     const n = parseNum(value.trim());
     return currency && n > 0 ? { kind: "money", currency, value: n, plus: false } : null;
   }

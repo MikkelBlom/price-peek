@@ -166,6 +166,14 @@ test("typed values in form fields", () => {
   assert.equal(field("500000", "Quantity"), null);
   // translated page: "원 ~ 원" became "one ~ one"; the page's main currency fills in
   assert.deepEqual((m => [m.currency, m.value])(parseFieldValue("500000", "~onesearch", "KRW")), ["KRW", 500000]);
+  // settings fields with a unit label hold counts, not prices (an admin page got "201 kr." on "30 min")
+  assert.equal(parseFieldValue("30", "Default sync interval · Minutes between background syncs min Save", "USD"), null);
+  assert.equal(parseFieldValue("50", "Largest file · Files over this are not downloaded. MB Save", "USD"), null);
+  assert.equal(parseFieldValue("1000", "Links per course · links Save", "USD"), null);
+  assert.equal(parseFieldValue("6", "Retry a failed file after h Save", "USD"), null);
+  // an explicit currency still wins, and a plain price field still takes the page currency
+  assert.deepEqual((m => [m.currency, m.value])(parseFieldValue("30", "Price per month in USD", "KRW")), ["USD", 30]);
+  assert.deepEqual((m => [m.currency, m.value])(parseFieldValue("120000", "Minimum price", "KRW")), ["KRW", 120000]);
   assert.equal(field("hello", "원"), null);
   assert.equal(guessCurrency("Price in EUR"), "EUR");
   assert.equal(guessCurrency("Europe"), null);
